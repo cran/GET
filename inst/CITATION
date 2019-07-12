@@ -1,0 +1,119 @@
+citHeader("To cite package ‘GET’ in publications use:")
+
+citEntry(
+    entry = "Article",
+    title = "Global envelope tests for spatial processes",
+    author = personList(as.person("M. Myllymäki"),
+                        as.person("T. Mrkvička"),
+                        as.person("P. Grabarnik"),
+                        as.person("H. Seijo"),
+                        as.person("U. Hahn")),
+    journal = "Journal of the Royal Statistical Society: Series B (Statistical Methodology)",
+    year = "2017",
+    volume = "79",
+    pages = "381-404",
+    url = "https://dx.doi.org/10.1111/rssb.12172",
+    textVersion  =
+    paste("Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017).",
+          "Global envelope tests for spatial processes. Journal of the Royal Statistical Society:",
+          "Series B (Statistical Methodology) 79: 381-404. doi: 10.1111/rssb.12172")
+)
+
+citEntry(
+    entry = "Article",
+    title = "Multiple Monte Carlo testing, with applications in spatial point processes",
+    author = personList(as.person("T. Mrkvička"),
+                        as.person("M. Myllymäki"),
+                        as.person("U. Hahn")),
+    journal = "Statistics and Computing",
+    year = "2017",
+    volume = "27",
+    number = "5",
+    pages = "1239-1255",
+    url = "http://dx.doi.org/10.1007/s11222-016-9683-9",
+    textVersion = "Mrkvička, T., Myllymäki, M., and Hahn, U. (2017).
+Multiple Monte Carlo testing, with applications in spatial point processes.
+Statistics and Computing 27 (5): 1239-1255. doi:10.1007/s11222-016-9683-9",
+    header = "and a suitable selection of:"
+)
+
+citEntry(
+    entry = "Article",
+    title = "A one-way ANOVA test for functional data with graphical interpretation",
+    author = personList(as.person("T. Mrkvička"),
+                        as.person("U. Hahn"),
+                        as.person("M. Myllymäki")),
+    journal = "arXiv:1612.03608 [stat.ME]",
+    year = "2018",
+    volume = "",
+    pages = "",
+    url = "https://arxiv.org/abs/1612.03608",
+    textVersion = "Mrkvička, T., Hahn, U. and Myllymäki, M. (2018).
+A one-way ANOVA test for functional data with graphical interpretation.
+arXiv:1612.03608 [stat.ME]"
+)
+
+citEntry(
+    entry = "Article",
+    title = "New methods for multiple testing in permutation inference for the general linear model",
+    author = personList(as.person("T. Mrkvička"),
+                        as.person("M. Myllymäki"),
+                        as.person("N.N. Narisetty")),
+    journal = "arXiv:1906.09004 [stat.ME]",
+    year = "2019",
+    volume = "",
+    pages = "",
+    url = "https://arxiv.org/abs/1906.09004",
+    textVersion = "Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019).
+New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]"
+)
+
+citEntry(
+    entry = "Article",
+    title = "A nonparametric graphical tests of significance in functional GLM",
+    author = personList(as.person("T. Mrkvička"),
+                        as.person("T. Roskovec"),
+                        as.person("M. Rost")),
+    journal = "arXiv:1902.04926 [stat.ME]",
+    year = "2019",
+    volume = "",
+    pages = "",
+    url = "https://arxiv.org/abs/1902.04926",
+    textVersion = "Mrkvička, T., Roskovec, T. and Rost, M. (2019).
+A nonparametric graphical tests of significance in functional GLM. arXiv:1902.04926 [stat.ME]"
+)
+
+citEntry(
+    entry = "Article",
+    title = "Deviation test construction and power comparison for marked spatial point patterns",
+    author = personList(as.person("M. Myllymäki"),
+                        as.person("P. Grabarnik"),
+                        as.person("H. Seijo"),
+                        as.person("D. Stoyan")),
+    journal = "Spatial Statistics",
+    year = "2015",
+    volume = "11",
+    pages = "19--34",
+    url = "https://dx.doi.org/10.1016/j.spasta.2014.11.004",
+    textVersion = "Myllymäki, M., Grabarnik, P., Seijo, H., and Stoyan, D. (2015).
+Deviation test construction and power comparison for marked spatial point patterns.
+Spatial Statistics 11: 19-34. doi: 10.1016/j.spasta.2014.11.004"
+)
+
+citEntry(
+    entry = "Article",
+    title = "Monte Carlo testing in spatial statistics, with applications to spatial residuals",
+    author = personList(as.person("T. Mrkvička"),
+                        as.person("S. Soubeyrand"),
+                        as.person("M. Myllymäki"),
+                        as.person("P. Grabarnik"),
+                        as.person("U. Hahn")),
+    journal = "Spatial Statistics",
+    year = "2016",
+    volume = "18, Part A",
+    pages = "40--53",
+    url = "        http://dx.doi.org/10.1016/j.spasta.2016.04.005",
+    textVersion = "Mrkvička, T., Soubeyrand, S., Myllymäki, M., Grabarnik, P. and Hahn, U. (2016).
+Monte Carlo testing in spatial statistics, with applications to spatial residuals.
+Spatial Statistics 18, Part A: 40--53. doi: 10.1016/j.spasta.2016.04.005",
+)
