@@ -47,15 +47,10 @@ combined_scaled_MAD_bounding_curves <- function(central_curves_ls, max_u, lower_
 #' or studentized) MAD envelope test is performed with the test functions saved in the curve set objects.
 #' Details of the combined test can be found in Mrkvicka et al. (2017)
 #'
-#' @param curve_sets A list of objects of type 'curve_set' or \code{\link[spatstat]{envelope}}.
+#' @inheritParams global_envelope_test
 #' @param type Either "qdir" for the direction quantile envelope test (type \code{'qdir'}
 #' in \code{\link{global_envelope_test}}) or "st" for the studentized envelope test
 #' (type \code{'st'} \code{\link{global_envelope_test}}).
-#' @param alpha The significance level. The 100(1-alpha)\% global envelope will be calculated.
-#' @param probs A two-element vector containing the lower and upper
-#' quantiles for the envelope, in that order and on the interval [0, 1].
-#' The default values are 0.025 and 0.975.
-#' @inheritParams central_region
 #' @param ... Additional parameters to be passed to \code{\link{central_region}}.
 #' @references
 #' Mrkvicka, T., Myllymäki, M. and Hahn, U. (2017) Multiple Monte Carlo testing, with applications in spatial point processes.
@@ -78,28 +73,28 @@ combined_scaled_MAD_bounding_curves <- function(central_curves_ls, max_u, lower_
 #'   rJ <- seq(0, rmaxJ, by=rstepJ) # r-distances for Fest, Gest, Jest
 #'
 #'   # Perform simulations of CSR and calculate the L-functions
-#'   system.time( env_L <- envelope(X, nsim=nsim,
+#'   env_L <- envelope(X, nsim=nsim,
 #'    simulate=expression(runifpoint(X$n, win=X$window)),
 #'    fun="Lest", correction="translate",
 #'    transform = expression(.-r), # Take the L(r)-r function instead of L(r)
 #'    r=r,                         # Specify the distance vector
 #'    savefuns=TRUE,               # Save the estimated functions
-#'    savepatterns=TRUE) )         # Save the simulated patterns
+#'    savepatterns=TRUE)           # Save the simulated patterns
 #'   # Take the simulations from the returned object
 #'   simulations <- attr(env_L, "simpatterns")
 #'   # Then calculate the other test functions F, G, J for each simulated pattern
-#'   system.time( env_F <- envelope(X, nsim=nsim,
-#'                                simulate=simulations,
-#'                                fun="Fest", correction="Kaplan", r=rJ,
-#'                                savefuns=TRUE) )
-#'   system.time( env_G <- envelope(X, nsim=nsim,
-#'                                simulate=simulations,
-#'                                fun="Gest", correction="km", r=rJ,
-#'                                savefuns=TRUE) )
-#'   system.time( env_J <- envelope(X, nsim=nsim,
-#'                                simulate=simulations,
-#'                                fun="Jest", correction="none", r=rJ,
-#'                                savefuns=TRUE) )
+#'   env_F <- envelope(X, nsim=nsim,
+#'                     simulate=simulations,
+#'                     fun="Fest", correction="Kaplan", r=rJ,
+#'                     savefuns=TRUE)
+#'   env_G <- envelope(X, nsim=nsim,
+#'                     simulate=simulations,
+#'                     fun="Gest", correction="km", r=rJ,
+#'                    savefuns=TRUE)
+#'   env_J <- envelope(X, nsim=nsim,
+#'                     simulate=simulations,
+#'                     fun="Jest", correction="none", r=rJ,
+#'                     savefuns=TRUE)
 #'
 #'   # Crop the curves to the desired r-interval I
 #'   curve_set_L <- crop_curves(env_L, r_min=rmin, r_max=rmax)

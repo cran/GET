@@ -142,6 +142,7 @@ central_region2d <- function(image_sets, ...) {
 #' \code{\link{global_envelope_test}}.
 #' @export
 #' @aliases GET.2d
+#' @seealso \code{\link{plot.global_envelope2d}}
 #' @examples
 #' \donttest{
 #' # Example of spatial point pattern residuals
@@ -306,8 +307,8 @@ plot.combined_global_envelope2d <- function(x, plot_style = c("ggplot2", "basic"
              main.plots <- paste(names(x)[i], ": ", c("Observed",
                                                       "Lower envelope",
                                                       "Upper envelope",
-                                                      "Sign. below (red)",
-                                                      "Sign. above (red)"), sep="")
+                                                      "Sign. below",
+                                                      "Sign. above"), sep="")
              env2d_basic_plot(x[[i]], var='obs', sign.col=sign.col, transparency=transparency, contours=contours, main=main.plots[1], ...)
              env2d_basic_plot(x[[i]], var='lo', sign.col=sign.col, transparency=transparency, contours=contours, main=main.plots[2], ...)
              env2d_basic_plot(x[[i]], var='hi', sign.col=sign.col, transparency=transparency, contours=contours, main=main.plots[3], ...)

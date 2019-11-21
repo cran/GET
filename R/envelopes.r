@@ -1,10 +1,11 @@
 # Functionality for central regions based on a curve set
+# @param ... Ignored.
 #' @importFrom spatstat fv
 individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
                                       alternative = c("two.sided", "less", "greater"),
                                       probs = c((1-coverage)/2, 1-(1-coverage)/2),
                                       quantile.type = 7,
-                                      central = "median", ...) {
+                                      central = "median") {
   if(!is.numeric(coverage) || (coverage < 0 | coverage > 1)) stop("Unreasonable value of coverage.\n")
   alpha <- 1 - coverage
   if(!(type %in% c("rank", "erl", "cont", "area", "qdir", "st", "unscaled")))
@@ -39,7 +40,7 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
            scaling <- "none"
          })
   distance <- forder(curve_set, measure=measure, scaling=scaling,
-                     alternative=alternative, probs=probs, quantile.type=quantile.type, ...)
+                     alternative=alternative, probs=probs, quantile.type=quantile.type)
 
   data_and_sim_curves <- data_and_sim_curves(curve_set) # all the functions
   Nfunc <- length(distance) # Number of functions
@@ -153,13 +154,13 @@ individual_global_envelope_test <- function(curve_set, type = "erl", alpha = 0.0
                                             alternative = c("two.sided", "less", "greater"),
                                             ties = "erl",
                                             probs = c(0.025, 0.975), quantile.type = 7,
-                                            central = "mean", ...) {
+                                            central = "mean") {
   alternative <- match.arg(alternative)
   if(!is.numeric(alpha) || (alpha < 0 | alpha > 1)) stop("Unreasonable value of alpha.\n")
   res <- individual_central_region(curve_set, type=type, coverage=1-alpha,
                                    alternative=alternative,
                                    probs=probs, quantile.type=quantile.type,
-                                   central=central, ...)
+                                   central=central)
   # The type of the p-value
   possible_ties <- c('midrank', 'random', 'conservative', 'liberal', 'erl')
   if(!(ties %in% possible_ties)) stop("Unreasonable ties argument!\n")
@@ -395,7 +396,7 @@ print.combined_global_envelope <- function(x, ...) {
 plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
                                  dotplot = length(x$r)<10,
                                  main, ylim, xlab, ylab,
-                                 color_outside = TRUE, env.col = 1, base_size = 15,
+                                 color_outside = TRUE, env.col = 1, base_size = 11,
                                  labels = NULL, add = FALSE, digits = 3, legend = TRUE, ...) {
   plot_style <- match.arg(plot_style)
   if(dotplot) plot_style <- "basic"
@@ -450,85 +451,47 @@ plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
 #' @param level 1 or 2. In the case of two-step combined tests (with several test functions), two different plots are available:
 #' 1 for plotting the combined global envelopes (default and most often wanted) or
 #' 2 for plotting the second level test result.
-#' @param max_ncols_of_plots The maximum number of columns for the figures. Default 2.
+#' @param ncol The maximum number of columns for the figures.
+#' Default 2 or 3, if the length of x equals 3.
 #' (Relates to the number of curve_sets that have been combined.)
 #' @param nticks The number of ticks on the xaxis.
 #' @export
 #' @seealso \code{\link{central_region}}
-plot.combined_global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
-                                 main, ylim, xlab, ylab,
-                                 color_outside = TRUE, env.col = 1, base_size = 15,
+plot.combined_global_envelope <- function(x,
+                                 main, ylim = NULL, xlab, ylab,
+                                 color_outside = TRUE, env.col = 1, base_size = 12,
                                  labels = NULL, add = FALSE, digits = 3,
-                                 level = 1, max_ncols_of_plots = 2, nticks = 5,
+                                 level = 1, ncol = 2 + 1*(length(x)==3), nticks = 5,
                                  legend = TRUE, ...) {
-  plot_style <- match.arg(plot_style)
   if(!(level %in% c(1,2))) stop("Unreasonable value for level.\n")
   # main
   if(missing('main')) {
     alt <- attr(x[[1]], "einfo")$alternative
     main <- env_main_default(attr(x, "level2_ge"), digits=digits, alternative=alt)
   }
-  # ylim
-  if(missing('ylim'))
-    if(level == 1) ylim <- env_ylim_default(x, use_ggplot2 = plot_style == "ggplot2")
-    else ylim <- env_ylim_default(attr(x, "level2_ge"), use_ggplot2 = FALSE)
   # ylab, ylab, labels
-  if(missing('xlab')) {
-    if(plot_style == "ggplot2") {
-      xlab <- substitute(italic(i), list(i=attr(attr(x, "level2_ge"), "xexp")))
-    }
-    else {
-      if(attr(x[[1]], "xlab") == attr(x[[1]], "argu")) xlab <- lapply(x, function(y) { substitute(italic(i), list(i=attr(y, "xexp"))) })
-      else xlab <- lapply(x, function(y) { substitute(paste(i, " (", italic(j), ")", sep=""), list(i=attr(y, "xexp"), j=attr(y, "argu"))) })
-    }
-  }
-  if(missing('ylab')) {
-    if(plot_style == "ggplot2") {
-      ylab <- substitute(italic(i), list(i=attr(attr(x, "level2_ge"), "yexp")))
-    }
-    else {
-      if(inherits(attr(x[[1]], "yexp"), "character")) ylab <- lapply(x, function(y) attr(y, "yexp"))
-      else ylab <- lapply(x, function(y) { substitute(italic(i), list(i=attr(y, "yexp"))) })
-    }
-  }
+  if(missing('xlab'))
+    if(is.expression(attr(attr(x, "level2_ge"), "xexp"))) xlab <- substitute(i, list(i=attr(attr(x, "level2_ge"), "xexp")))
+    else xlab <- substitute(italic(i), list(i=attr(attr(x, "level2_ge"), "xexp")))
+  if(missing('ylab'))
+    if(is.expression(attr(attr(x, "level2_ge"), "yexp"))) ylab <- substitute(i, list(i=attr(attr(x, "level2_ge"), "yexp")))
+    else ylab <- substitute(italic(i), list(i=attr(attr(x, "level2_ge"), "yexp")))
   if(is.null(labels)) {
     if(!is.null(attr(x, "labels"))) labels <- attr(x, "labels")
     else {
       if(!is.null(names(x))) labels <- names(x)
       else {
-        if(plot_style == "ggplot2") {
-          labels <- sapply(x, function(y) attr(y, "ylab"), simplify=TRUE)
-          if(all(sapply(labels, FUN=identical, y=labels[[1]]))) labels <- NULL
-        }
+        labels <- sapply(x, function(y) attr(y, "ylab"), simplify=TRUE)
+        if(all(sapply(labels, FUN=identical, y=labels[[1]]))) labels <- NULL
       }
     }
   }
 
   if(level == 1) {
-    switch(plot_style,
-           basic = {
-             env_basic_plot(x, main=labels, ylim=ylim, xlab=xlab, ylab=ylab,
-                            color_outside=color_outside,
-                            max_ncols_of_plots=max_ncols_of_plots, add=add, env.col=env.col,
-                            nticks=nticks, ...)
-           },
-           fv = {
-             n_of_plots <- length(x)
-             ncols_of_plots <- min(n_of_plots, max_ncols_of_plots)
-             nrows_of_plots <- ceiling(n_of_plots / ncols_of_plots)
-             opar <- par(mfrow=c(nrows_of_plots, ncols_of_plots))
-             on.exit(par(opar))
-             if(is.vector(ylim) & length(ylim)==2) ylim <- rep(list(ylim), times=n_of_plots)
-             for(i in 1:length(x))
-               spatstat::plot.fv(x[[i]],
-                                 main=labels[i], ylim=ylim[[i]], xlab=xlab[[i]], ylab=ylab[[i]], add=FALSE, ...)
-           },
-           ggplot2 = {
-             env_ggplot(x, base_size=base_size,
-                        main=main, ylim=ylim, xlab=xlab, ylab=ylab,
-                        max_ncols_of_plots=max_ncols_of_plots,
-                        labels=labels, nticks=nticks, legend=legend, ...)
-           })
+    env_ggplot(x, base_size=base_size,
+              main=main, ylim=ylim, xlab=xlab, ylab=ylab,
+              max_ncols_of_plots=ncol,
+              labels=labels, nticks=nticks, legend=legend, ...)
   }
   else {
      plot.global_envelope(attr(x, "level2_ge"), dotplot = TRUE,
@@ -645,7 +608,7 @@ plot.combined_global_envelope <- function(x, plot_style = c("ggplot2", "fv", "ba
 #' is calculated either as the mean or median of functions provided in the curve sets.
 #' @param nstep 1 or 2 for how to contruct a combined global envelope if list of curve sets
 #' is provided. 2 (default) for a two-step combining procedure, 1 for one-step.
-#' @param ... Additional parameters to be passed to \code{\link{forder}}.
+#' @param ... Ignored.
 #' @return Either an object of class "global_envelope" and "fv" (see \code{\link[spatstat]{fv.object}}),
 #' or an "combined_global_envelope" for the case that \code{curve_sets} is a list of
 #' objects. The objects can be printed and plotted directly.
@@ -785,11 +748,21 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #' @export
 #' @examples
 #' if(requireNamespace("fda", quietly=TRUE)) {
-#'   curve_set <- create_curve_set(list(r=as.numeric(row.names(fda::growth$hgtf)),
-#'                                      obs=fda::growth$hgtf))
-#'   plot(curve_set, ylab="height")
-#'   bp <- fBoxplot(curve_set, coverage=0.50, type="area", factor=1)
+#'   years <- paste(1:18)
+#'   curves <- fda::growth[['hgtf']][years,]
+#'   # Heights
+#'   cset1 <- create_curve_set(list(r = as.numeric(years),
+#'                                  obs = curves))
+#'   plot(cset1, ylab="Height")
+#'   bp <- fBoxplot(cset1, coverage=0.50, type="area", factor=1)
 #'   plot(bp)
+#'
+#'   # Considering simultaneously heights and height differences
+#'   cset2 <- create_curve_set(list(r = as.numeric(years[-1]),
+#'              obs = curves[-1,] - curves[-nrow(curves),]))
+#'   csets <- list(Height = cset1, Change = cset2)
+#'   res <- fBoxplot(csets, type = 'area', factor = 1.5)
+#'   plot(res, xlab = "Age (years)", ylab = "")
 #' }
 fBoxplot <- function(curve_sets, factor = 1.5, ...) {
   res <- central_region(curve_sets, ...)
@@ -887,9 +860,8 @@ plot.fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"),
 #' @param ... Additional arguments to be passed to \code{\link{plot.combined_global_envelope}}.
 #'
 #' @export
-plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), level = 1,
+plot.combined_fboxplot <- function(x, level = 1,
                           outliers = TRUE, bp.col = 2, cr.col = 1, ...) {
-  plot_style <- match.arg(plot_style)
   if(!(level %in% c(1,2))) stop("Unreasonable value for level.\n")
   if(outliers) curve_sets <- attr(x, "curve_sets") else curve_sets <- NULL
   cr <- x
@@ -903,20 +875,10 @@ plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), 
       x[[i]]$lo <- attr(x[[i]], "whisker.lo")
       x[[i]]$hi <- attr(x[[i]], "whisker.hi")
     }
-    switch(plot_style,
-           basic = {
-             plot.combined_global_envelope(x, plot_style=plot_style, env.col=bp.col, ..., curve_sets=curve_sets)
-           },
-           fv = {
-             plot.combined_global_envelope(x, plot_style=plot_style, env.col=bp.col, ...)
-             if(outliers) warning("For fv style & combined boxplots, plotting outliers is not implemented.\n")
-           },
-           ggplot2 = {
-             plot.combined_global_envelope(x, plot_style=plot_style, env.col=bp.col, ..., curve_sets=curve_sets, x2=cr)
-           })
+    plot.combined_global_envelope(x, env.col=bp.col, ..., curve_sets=curve_sets, x2=cr)
   }
   else {
-    plot.fboxplot(x, plot_style=plot_style, outliers=outliers, bp.col=bp.col, cr.col=cr.col, ...)
+    plot.fboxplot(x, outliers=outliers, bp.col=bp.col, cr.col=cr.col, ...)
   }
 }
 
@@ -1066,6 +1028,7 @@ plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), 
 #' For 'midrank' the mid-rank within the tied values is taken.
 #' For 'erl' the extreme rank length p-value is calculated.
 #' The default is 'erl'.
+#' @param ... Additional parameters to be passed to \code{\link{central_region}}.
 #' @return Either an object of class "global_envelope" and "fv"
 #' (see \code{\link[spatstat]{fv.object}}) or "combined_global_envelope" for
 #' combined tests. The objects can be printed and plotted directly.
@@ -1101,41 +1064,59 @@ plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), 
 #' \code{\link{global_envelope_test2d}}, \code{\link{GET.composite}}
 #' @aliases GET
 #' @examples
+#' # Goodness-of-fit testing for simple hypothesis
 #' if(require("spatstat", quietly=TRUE)) {
-#'   ## Testing complete spatial randomness (CSR)
-#'   #-------------------------------------------
+#'   # Testing complete spatial randomness (CSR)
+#'   #==========================================
+#'   X <- unmark(spruces)
+#'
 #'   \donttest{nsim <- 1999 # Number of simulations}
 #'   \dontshow{nsim <- 19 # Number of simulations}
-#'   pp <- unmark(spruces)
+#'
+#'   # Illustration of general workflow for simple hypotheses
+#'   #=======================================================
+#'   # First illustrate the general workflow for the test by this example
+#'   # of CSR test for a point pattern X using the empirical L-function.
+#'   # Define the argument values at which the functions are evaluated
+#'   obs.L <- Lest(X, correction = "translate")
+#'   r <- obs.L[['r']]
+#'   # The test function for the data
+#'   obs <- obs.L[['trans']] - r
+#'   # Prepare simulations and calculate test functions for them at same r as 'obs'
+#'   sim <- matrix(nrow = length(r), ncol = nsim)
+#'   for(i in 1:nsim) {
+#'     sim.X <- runifpoint(ex = X) # simulation under CSR
+#'     sim[, i] <- Lest(sim.X, correction = "translate", r = r)[['trans']] - r
+#'   }
+#'   # Create a curve_set containing argument values, observed and simulated functions
+#'   cset <- create_curve_set(list(r = r, obs = obs, sim_m = sim))
+#'   # Perform the test
+#'   res <- global_envelope_test(cset, type="erl")
+#'   plot(res, ylab = expression(italic(hat(L)(r)-r)))
+#'
+#'   # Simple hypothesis for a point pattern utilizing the spatstat package
+#'   #=====================================================================
 #'   # Generate nsim simulations under CSR, calculate L-function for the data and simulations
-#'   env <- envelope(pp, fun="Lest", nsim=nsim,
+#'   env <- envelope(X, fun="Lest", nsim=nsim,
 #'                   savefuns=TRUE, # save the functions
 #'                   correction="translate", # edge correction for L
-#'                   simulate=expression(runifpoint(ex=pp))) # Simulate CSR
-#'   # The rank envelope test (extreme rank length (ERL) breaking of ties)
-#'   res <- global_envelope_test(env)
-#'   # Plot the result.
-#'   # - The central curve is now obtained from env[['theo']], which is the
-#'   # value of the L-function under the null hypothesis (L(r) = r).
-#'   # - Three different plot styles are provided:
-#'   # a) ggplot2 style (requires ggplot2)
-#'   plot(res, plot_style="ggplot2")
-#'   # b) spatstat's style (requires spatstat)
-#'   plot(res, plot_style="fv")
-#'   # c) a basic style
-#'   plot(res, plot_style="basic")
+#'                   transform = expression(.-r), # centering
+#'                   simulate=expression(runifpoint(ex=X))) # Simulate CSR
+#'   # The rank envelope test (ERL)
+#'   res <- global_envelope_test(env, type="erl")
+#'   # Plot the result
+#'   plot(res)
 #'
 #'   ## Advanced use:
 #'   # Choose the interval of distances [r_min, r_max] (at the same time create a curve_set from 'env')
-#'   curve_set <- crop_curves(env, r_min=1, r_max=7)
-#'   # For better visualisation, take the L(r)-r function
-#'   curve_set <- residual(curve_set, use_theo=TRUE)
+#'   cset <- crop_curves(env, r_min=1, r_max=7)
 #'   # Do the rank envelope test (erl)
-#'   res <- global_envelope_test(curve_set); plot(res, ylab=expression(italic(L(r)-r)))
+#'   res <- global_envelope_test(cset, type="erl")
+#'   plot(res, ylab=expression(italic(L(r)-r)))
 #'
 #'   \donttest{
-#'   ## Random labeling test
-#'   #----------------------
+#'   # Random labeling test
+#'   #=====================
 #'   mpp <- spruces
 #'   # 1) Perform simulations under the random labelling hypothesis and calculate
 #'   # the test function T(r) for the data pattern (mpp) and each simulation.
@@ -1157,15 +1138,15 @@ plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), 
 #'   # 3) Do the rank envelope test
 #'   res <- global_envelope_test(curve_set)
 #'   # 4) Plot the test result
-#'   plot(res, ylab=expression(italic(L[m](r)-L(r))))
+#'   plot(res, ylab=expression(italic(L[mm](r)-L(r))))
 #'
-#'   ## Goodness-of-fit test (typically conservative, see ?GET.composite for adjusted tests)
-#'   #-----------------------------------------------
-#'   pp <- unmark(spruces)
+#'   # Goodness-of-fit test (typically conservative, see ?GET.composite for adjusted tests)
+#'   #=====================
+#'   X <- unmark(spruces)
 #'   # Minimum distance between points in the pattern
-#'   min(nndist(pp))
+#'   min(nndist(X))
 #'   # Fit a model
-#'   fittedmodel <- ppm(pp, interaction=Hardcore(hc=1)) # Hardcore process
+#'   fittedmodel <- ppm(X, interaction=Hardcore(hc=1)) # Hardcore process
 #'
 #'   # Simulating Gibbs process by 'envelope' is slow, because it uses the MCMC algorithm
 #'   #env <- envelope(fittedmodel, fun="Jest", nsim=999, savefuns=TRUE,
@@ -1177,17 +1158,17 @@ plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), 
 #'   for(j in 1:nsim) {
 #'      simulations[[j]] <- rHardcore(beta=exp(fittedmodel$coef[1]),
 #'                                    R=fittedmodel$interaction$par$hc,
-#'                                    W=pp$window)
+#'                                    W=X$window)
 #'      if(j%%10==0) cat(j, "...", sep="")
 #'   }
-#'   env <- envelope(pp, simulate=simulations, fun="Jest", nsim=length(simulations),
+#'   env <- envelope(X, simulate=simulations, fun="Jest", nsim=length(simulations),
 #'                   savefuns=TRUE, correction="none", r=seq(0, 4, length=500))
 #'   curve_set <- crop_curves(env, r_min=1, r_max=3.5)
 #'   res <- global_envelope_test(curve_set, type="erl"); plot(res, ylab=expression(italic(J(r))))
 #'   }
 #'
 #'   # A combined global envelope test
-#'   #--------------------------------
+#'   #================================
 #'   # As an example test CSR of the saplings point pattern by means of
 #'   # L, F, G and J functions.
 #'   data(saplings)
@@ -1237,8 +1218,8 @@ plot.combined_fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"), 
 #'   plot(res, labels=c("L(r)-r", "F(r)", "G(r)", "J(r)"))
 #' }
 #'
-#' ## A test based on a low dimensional random vector
-#' #-------------------------------------------------
+#' # A test based on a low dimensional random vector
+#' #================================================
 #' # Let us generate some example data.
 #' X <- matrix(c(-1.6,1.6),1,2) # data pattern X=(X_1,X_2)
 #' if(requireNamespace("mvtnorm", quietly=TRUE)) {
@@ -1349,28 +1330,23 @@ global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
 #' ## Testing complete spatial randomness (CSR)
 #' #-------------------------------------------
 #' if(require("spatstat", quietly=TRUE)) {
-#'   pp <- unmark(spruces)
+#'   X <- unmark(spruces)
 #'   \donttest{nsim <- 2499 # Number of simulations}
 #'   \dontshow{nsim <- 19 # Number of simulations for testing}
-#'   # Generate nsim simulations under CSR, calculate L-function for the data and simulations
-#'   env <- envelope(pp, fun="Lest", nsim=nsim, savefuns=TRUE, correction="translate",
-#'                   simulate=expression(runifpoint(ex=pp)))
+#'   # Generate nsim simulations under CSR, calculate centred L-function for the data and simulations
+#'   env <- envelope(X, fun="Lest", nsim=nsim, savefuns=TRUE,
+#'                   correction="translate", transform = expression(.-r),
+#'                   simulate=expression(runifpoint(ex=X)))
 #'   # The rank envelope test
 #'   res <- rank_envelope(env)
 #'   # Plot the result.
-#'   # - The central curve is now obtained from env[['theo']], which is the
-#'   # value of the L-function under the null hypothesis (L(r) = r).
 #'   plot(res)
-#'   # or (requires R library ggplot2)
-#'   plot(res, plot_style="ggplot2")
 #'
 #'   ## Advanced use:
 #'   # Choose the interval of distances [r_min, r_max] (at the same time create a curve_set from 'env')
 #'   curve_set <- crop_curves(env, r_min=1, r_max=7)
-#'   # For better visualisation, take the L(r)-r function
-#'   curve_set <- residual(curve_set, use_theo=TRUE)
 #'   # Do the rank envelope test
-#'   res <- rank_envelope(curve_set); plot(res, plot_style="ggplot2")
+#'   res <- rank_envelope(curve_set); plot(res)
 #' }
 rank_envelope <- function(curve_set, type = "rank", ...) {
   if(!(type %in% c("rank", "erl", "cont", "area"))) stop("No such type for the global rank envelope.\n")
@@ -1407,29 +1383,26 @@ rank_envelope <- function(curve_set, type = "rank", ...) {
 #' ## Testing complete spatial randomness (CSR)
 #' #-------------------------------------------
 #' if(require("spatstat", quietly=TRUE)) {
-#'   pp <- spruces
+#'   X <- spruces
 #'   \donttest{nsim <- 999 # Number of simulations}
 #'   \dontshow{nsim <- 19 # Number of simulations for testing}
 #'   ## Test for complete spatial randomness (CSR)
-#'   # Generate nsim simulations under CSR, calculate L-function for the data and simulations
-#'   env <- envelope(pp, fun="Lest", nsim=nsim, savefuns=TRUE, correction="translate",
-#'                   simulate=expression(runifpoint(ex=pp)))
+#'   # Generate nsim simulations under CSR, calculate centred L-function for the data and simulations
+#'   env <- envelope(X, fun="Lest", nsim=nsim, savefuns=TRUE,
+#'                   correction="translate", transform = expression(.-r),
+#'                   simulate=expression(runifpoint(ex=X)))
 #'   res_qdir <- qdir_envelope(env) # The directional quantile envelope test
 #'   plot(res_qdir)
-#'   # or (requires R library ggplot2)
-#'   plot(res_qdir, plot_style="ggplot2")
 #'
 #'   ## Advanced use:
 #'   # Create a curve set, choosing the interval of distances [r_min, r_max]
 #'   curve_set <- crop_curves(env, r_min=1, r_max=8)
-#'   # For better visualisation, take the L(r)-r function
-#'   curve_set <- residual(curve_set, use_theo=TRUE)
 #'   # The directional quantile envelope test
-#'   res_qdir <- qdir_envelope(curve_set); plot(res_qdir, plot_style="ggplot2")
+#'   res_qdir <- qdir_envelope(curve_set); plot(res_qdir)
 #'   # The studentised envelope test
-#'   res_st <- st_envelope(curve_set); plot(res_st, plot_style="ggplot2")
+#'   res_st <- st_envelope(curve_set); plot(res_st)
 #'   # The unscaled envelope test
-#'   res_unscaled <- unscaled_envelope(curve_set); plot(res_unscaled, plot_style="ggplot2")
+#'   res_unscaled <- unscaled_envelope(curve_set); plot(res_unscaled)
 #' }
 qdir_envelope <- function(curve_set, ...) {
   args <- list(...)

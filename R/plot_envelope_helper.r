@@ -171,10 +171,11 @@ env_main_default <- function(x, digits=3, alternative=attr(x, "einfo")$alternati
   }
   else {
     if(!is.null(attr(x, "p"))) {
-      if(alternative == "two.sided")
-        main <- paste(attr(x, "method"), ": p = ", round(attr(x, "p"), digits=digits), sep="")
-      else
-        main <- paste(attr(x, "method"), ": p = ", round(attr(x, "p"), digits=digits), "\n",
+      p <- round(attr(x, "p"), digits=digits)
+      if(p > 0) main <- paste(attr(x, "method"), ": p = ", p, sep="")
+      else main <- paste(attr(x, "method"), ": p < ", 10^(-digits), sep="")
+      if(alternative != "two.sided")
+        main <- paste(main, "\n",
                       "Alternative = \"", alternative, "\"\n", sep="")
     }
     else {
@@ -355,8 +356,8 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
           }
         }
         if(length(main) != n_of_plots) { main <- NULL; cat("Note: \"main\" Ignored.\n") }
-        if(!(inherits(xlab, "list") & length(xlab) == 1)) xlab <- rep(list(xlab), times=n_of_plots)
-        if(!(inherits(ylab, "list") & length(ylab) == 1)) ylab <- rep(list(ylab), times=n_of_plots)
+        if(!inherits(xlab, "list") && length(xlab) == 1) xlab <- rep(list(xlab), times=n_of_plots)
+        if(!inherits(ylab, "list") && length(ylab) == 1) ylab <- rep(list(ylab), times=n_of_plots)
         if(!is.null(curve_sets)) {
           curve_sets <- combine_curve_sets(curve_sets, equalr=FALSE)
         }
@@ -754,8 +755,8 @@ env2d_ggplot2_helper <- function(x, fixedscales, contours = TRUE, main="", inser
   namelist <- list(obs = "Observed",
                    lo = "Lower envelope" ,
                    hi = "Upper envelope" ,
-                   lo.sign = "Sign.: below (red)" ,
-                   hi.sign = "Sign.: above (red)" )
+                   lo.sign = "Sign.: below" ,
+                   hi.sign = "Sign.: above" )
   if(!missing(main) && !is.null(main) && insertmain) {
     for (i in seq_along(namelist)) {
       namelist[[i]] <- paste(main, ": ", namelist[[i]])

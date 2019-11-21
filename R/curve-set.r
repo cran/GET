@@ -60,7 +60,7 @@ envelope_to_curve_set <- function(env, ...) {
   res
 }
 
-# Turn an \code{\link[spatstat]{fdata}} object into a curve_set object.
+# Turn an \code{\link[fda.usc]{fdata}} object into a curve_set object.
 #
 # @param fdata An \code{\link[fda.usc]{fdata}} object.
 # @return A corresponding curve_set object.
@@ -293,12 +293,14 @@ print.curve_set <- function(x, ...) {
 #' Plot method for the class 'curve_set'
 #'
 #' @param x An \code{curve_set} object
+#' @param plot_style Either "ggplot2" or "basic".
 #' @param ylim The y limits of the plot with the default being the minimum and maximum over all curves.
 #' @param xlab The label for the x-axis. Default "r".
 #' @param ylab The label for the y-axis. Default "obs".
 #' @param col_obs Color for 'obs' in the argument \code{x}.
 #' @param col_sim Color for 'sim_m' in the argument \code{x}.
 #' @param ... Additional parameters to be passed to plot and lines.
+#' @inheritParams plot.global_envelope
 #'
 #' @export
 #' @importFrom graphics plot
@@ -306,32 +308,63 @@ print.curve_set <- function(x, ...) {
 #' @importFrom grDevices grey
 #' @importFrom graphics axis
 #' @importFrom graphics abline
-plot.curve_set <- function(x, ylim, xlab = "r", ylab = "obs",
-                           col_obs = 1, col_sim = grDevices::grey(0.7), ...) {
+#' @importFrom ggplot2 ggplot
+#' @importFrom ggplot2 geom_line
+#' @importFrom ggplot2 scale_x_continuous
+#' @importFrom ggplot2 scale_y_continuous
+#' @importFrom ggplot2 labs
+plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
+                           ylim, xlab = "r", ylab = "obs", main = NULL,
+                           col_obs = 1, col_sim = grDevices::grey(0.7),
+                           base_size = 11, ...) {
+  plot_style <- match.arg(plot_style)
   if(with(x, is.matrix(obs))) {
     funcs <- x[['obs']]
     col_sim <- col_obs
   }
   else funcs <- cbind(x[['obs']], x[['sim_m']])
-
-  if(missing('ylim')) ylim <- with(x, c(min(funcs), max(funcs)))
   rdata <- combined_global_envelope_rhelper(x)
   if(rdata$retick_xaxis) {
     rvalues <- rdata$new_r_values
   }
   else rvalues <- x$r
   nr <- length(rvalues)
-  # Plot
-  if(!rdata$retick_xaxis)
-    graphics::plot(rvalues, funcs[,1], type="l", ylim=ylim, col=col_obs, xlab=xlab, ylab=ylab, ...)
-  else
-    graphics::plot(rvalues, funcs[,1], type="l", ylim=ylim, xaxt="n", col=col_obs, xlab=xlab, ylab=ylab,...)
-  for(i in 2:ncol(funcs)) graphics::lines(rvalues, funcs[,i], col=col_sim)
-  graphics::lines(rvalues, funcs[,1], type="l", col=col_obs, ...)
-  if(rdata$retick_xaxis) {
-    graphics::axis(1, rdata$loc_break_values, labels=paste(round(rdata$r_break_values, digits=2)))
-    graphics::abline(v = (1:nr)[rdata$r_values_newstart_id], lty=3)
+  if(missing('ylim')) {
+    if(plot_style == "basic") ylim <- with(x, c(min(funcs), max(funcs)))
+    else ylim <- NULL
   }
+
+  switch(plot_style,
+         ggplot2 = {
+             df <- data.frame(r = rvalues, f = c(funcs), id = rep(1:ncol(funcs), each=nrow(funcs)))
+             p <- ( ggplot(data=df) + geom_line(aes_(x = ~r, y = ~f, group = ~id))
+                   + scale_y_continuous(name = ylab, limits = ylim)
+                   + labs(title=main)
+                   + ThemePlain(base_size=base_size))
+             if(rdata$retick_xaxis) {
+               p <- p + scale_x_continuous(name = xlab,
+                                           breaks = rdata$loc_break_values,
+                                           labels = paste(round(rdata$r_break_values, digits=2)),
+                                           limits = range(rdata$new_r_values))
+               p <- p + geom_vline(xintercept = rdata$new_r_values[rdata$r_values_newstart_id],
+                                  linetype = "dotted")
+             }
+             else p <- p + scale_x_continuous(name = xlab)
+             p
+         },
+         basic = {
+             # Plot
+             if(!rdata$retick_xaxis)
+                 graphics::plot(rvalues, funcs[,1], type="l", ylim=ylim, col=col_obs, xlab=xlab, ylab=ylab, main=main, ...)
+             else
+                 graphics::plot(rvalues, funcs[,1], type="l", ylim=ylim, xaxt="n", col=col_obs, xlab=xlab, ylab=ylab, main=main, ...)
+             for(i in 2:ncol(funcs)) graphics::lines(rvalues, funcs[,i], col=col_sim)
+             graphics::lines(rvalues, funcs[,1], type="l", col=col_obs, ...)
+             if(rdata$retick_xaxis) {
+                 graphics::axis(1, rdata$loc_break_values, labels=paste(round(rdata$r_break_values, digits=2)))
+                 graphics::abline(v = rdata$new_r_values[rdata$r_values_newstart_id], lty=3)
+             }
+         })
 }
 
 # Combine curve sets.
@@ -417,9 +450,9 @@ check_curve_set_dimensions <- function(x, equalr=FALSE) {
 # If obs is a vector, then the returned matrix will contain the obs vector on its first row.
 # If obs is a matrix, then the returned matrix will be a transpose of obs.
 data_and_sim_curves <- function(curve_set) {
-  if(with(curve_set, is.matrix(obs))) funcs <- t(curve_set[['obs']]) # all columns data (sim_m ignored)
+  if(with(curve_set, is.matrix(obs))) funcs <- t(curve_set[['obs']]) # all rows data (sim_m ignored)
   else {
-    funcs <- rbind(curve_set[['obs']], t(curve_set[['sim_m']])) # first column data, rest simulations
+    funcs <- rbind(curve_set[['obs']], t(curve_set[['sim_m']])) # first row data, rest simulations
     rownames(funcs) <- c('obs', paste("sim", 1:(nrow(funcs)-1), sep=""))
   }
   funcs
@@ -427,45 +460,39 @@ data_and_sim_curves <- function(curve_set) {
 
 # A helper function to obtain the mean of functions in curve_set.
 #
-# If obs is a matrix, then take the mean of the functions in obs. (ignore sim_m)
-# If obs is a vector, then take the mean of the functions in sim_m.
+# Calculate the mean of all the functions in the curve_set (obs and sim_m).
 curve_set_mean <- function(curve_set) {
-  if(with(curve_set, is.matrix(obs))) mid <- apply(curve_set[['obs']], 1, mean)
-  else mid <- apply(curve_set[['sim_m']], 1, mean)
-  mid
+  funcs <- data_and_sim_curves(curve_set)
+  apply(funcs, MARGIN = 2, FUN = mean)
 }
 
 # A helper function to obtain the median of functions in curve_set.
 #
-# If obs is a matrix, then take the median of the functions in obs. (ignore sim_m)
-# If obs is a vector, then take the median of the functions in sim_m.
+# Calculate the median of all the functions in the curve_set (obs and sim_m).
 #' @importFrom stats median
 curve_set_median <- function(curve_set) {
-  if(with(curve_set, is.matrix(obs))) mid <- apply(curve_set[['obs']], 1, median)
-  else mid <- apply(curve_set[['sim_m']], 1, stats::median)
-  mid
+  funcs <- data_and_sim_curves(curve_set)
+  apply(funcs, MARGIN = 2, FUN = median)
 }
 
 # A helper function to obtain the sd of functions in curve_set.
 #
-# If obs is a matrix, then take the sd of the functions in obs. (ignore sim_m)
-# If obs is a vector, then take the sd of the functions in sim_m.
+# No matter whether obs is a matrix or a vector, the quantiles are calculated
+# from all the functions in 'obs' and 'sim_m'.
 #' @importFrom stats sd
 curve_set_sd <- function(curve_set) {
-  if(with(curve_set, is.matrix(obs))) sim_sd <- apply(curve_set[['obs']], 1, stats::sd)
-  else sim_sd <- apply(curve_set[['sim_m']], 1, stats::sd)
-  sim_sd
+  funcs <- data_and_sim_curves(curve_set)
+  apply(funcs, MARGIN = 2, FUN = sd)
 }
 
 # A helper function to obtain the quantiles of functions in curve_set.
 #
-# If obs is a matrix, then take the quantiles of the functions in obs. (ignore sim_m)
-# If obs is a vector, then take the quantiles of the functions in sim_m.
+# No matter whether obs is a matrix or a vector, the quantiles are calculated
+# from all the functions in 'obs' and 'sim_m'.
 # @param ... Additional parameters passed to \code{\link[stats]{quantile}}.
 #' @importFrom stats quantile
 curve_set_quant <- function(curve_set, probs, ...) {
-  if(with(curve_set, is.matrix(obs))) quant_m <- apply(curve_set[['obs']], 1, stats::quantile, probs = probs, ...)
-  else quant_m <- apply(curve_set[['sim_m']], 1, stats::quantile, probs = probs, ...)
+  funcs <- data_and_sim_curves(curve_set)
   # Dimensions: 2, r_idx.
-  quant_m
+  apply(funcs, MARGIN = 2, FUN = quantile, probs = probs, ...)
 }

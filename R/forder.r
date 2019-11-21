@@ -9,25 +9,31 @@ cont_pointwise_hiranks <- function(data_and_sim_curves) {
   for(i in 1:nr) {
     y <- data_and_sim_curves[,i]
     ordery <- order(y, decreasing = TRUE) # index of function values at "i" from largest to smallest
-    for(j in 2:(Nfunc-1)) {
-      if(y[ordery[j-1]] == y[ordery[j+1]])
-        RRR[ordery[j],i] <- j-1
-      else
-        RRR[ordery[j],i] <- j-1+(y[ordery[j-1]]-y[ordery[j]])/(y[ordery[j-1]]-y[ordery[j+1]])
+    y <- y[ordery]
+    ties <- y[1:(Nfunc-2)] == y[3:Nfunc] # same as j = 2:(Nfunc-1); ties <- y[j-1] == y[j+1]
+    RR <- 0:(Nfunc-1) # Initialize the vector with j-1 (values for the case of ties)
+    RR[1] <- exp(-(y[1]-y[2])/(y[2]-y[Nfunc]))
+    if(!any(ties)) {
+      RR[2:(Nfunc-1)] <- 1:(Nfunc-2)+(y[1:(Nfunc-2)]-y[2:(Nfunc-1)])/(y[1:(Nfunc-2)]-y[3:Nfunc])
+      # same as j <- 2:(Nfunc-1); RR[j] <- j-1+(y[j-1]-y[j])/(y[j-1]-y[j+1])
     }
-    RRR[ordery[1],i] <- exp(-(y[ordery[1]]-y[ordery[2]])/(y[ordery[2]]-y[ordery[Nfunc]]))
-    RRR[ordery[Nfunc],i] <- Nfunc-1
-    # Treat ties
-    j <- 1
-    while(j <= Nfunc-2) {
-      k <- 1
-      if(y[ordery[j]] == y[ordery[j+2]]) {
-        k <- 3; S <- 3*j+3
-        while(j+k <= Nfunc && y[ordery[j]] == y[ordery[j+k]]) { k <- k+1; S <- S+j+k }
-        for(t in j:(j+k-1)) { RRR[ordery[t],i] <- S/k }
+    else { # The case of some ties
+      j <- (2:(Nfunc-1))[!ties]
+      jm1 <- j-1
+      RR[j] <- jm1+(y[jm1]-y[j])/(y[jm1]-y[j+1])
+      # Treat ties
+      j <- 1
+      while(j <= Nfunc-2) {
+        k <- 1
+        if(ties[j]) {
+          k <- 3; S <- 3*j+3
+          while(j+k <= Nfunc && y[j] == y[j+k]) { k <- k+1; S <- S+j+k }
+          for(t in j:(j+k-1)) { RR[t] <- S/k }
+        }
+        j <- j+k
       }
-      j <- j+k
     }
+    RRR[ordery, i] <- RR
   }
   RRR
 }
@@ -68,8 +74,8 @@ individual_forder <- function(curve_set, r_min = NULL, r_max = NULL,
       hiranks <- Nfunc+1-loranks
     }
     else { # 'cont', 'area'
-      hiranks <- cont_pointwise_hiranks(data_and_sim_curves)
-      loranks <- cont_pointwise_hiranks(-data_and_sim_curves)
+      if(alternative != "less") hiranks <- cont_pointwise_hiranks(data_and_sim_curves)
+      if(alternative != "greater") loranks <- cont_pointwise_hiranks(-data_and_sim_curves)
     }
     switch(alternative,
            "two.sided" = {
@@ -101,10 +107,7 @@ individual_forder <- function(curve_set, r_min = NULL, r_max = NULL,
                distance <- distance / (Nfunc-1)
            },
            area = {
-             RRRm <- apply(allranks, MARGIN=1, FUN=min)
-             RRRm <- ceiling(RRRm) # = R_i
-             distance <- array(0, Nfunc)
-             for(j in 1:Nfunc) distance[j] <- sum(pmin(RRRm[j], allranks[j,]))
+             distance <- apply(allranks, MARGIN=1, FUN=function(x) { sum(pmin(ceiling(min(x)), x)) })
              if(alternative == "two.sided")
                distance <- distance / (ceiling(Nfunc/2)*nr)
              else
@@ -216,18 +219,35 @@ combined_forder <- function(curve_sets, ...) {
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 79: 381–404. doi: 10.1111/rssb.12172
 #' @examples
 #' if(requireNamespace("fda", quietly = TRUE)) {
-#'   curve_set <- create_curve_set(list(r = as.numeric(row.names(fda::growth$hgtf)),
-#'                                      obs = fda::growth$hgtf))
-#'   plot(curve_set, ylab="height")
-#'   forder(curve_set, measure = "max", scaling="qdir")
-#'   forder(curve_set, measure = "rank")
-#'   forder(curve_set, measure = "erl")
-#'   forder(curve_set, measure = "area")
+#'   # Consider ordering of the girls in the Berkeley Growth Study data
+#'   # available from the R package fda, see ?growth, according to their
+#'   # annual heights or/and changes within years.
+#'   # First create sets of curves (vectors), for raw heights and
+#'   # for the differences within the years
+#'   years <- paste(1:18)
+#'   curves <- fda::growth[['hgtf']][years,]
+#'   cset1 <- create_curve_set(list(r = as.numeric(years),
+#'                                  obs = curves))
+#'   plot(cset1, ylab="Height")
+#'   cset2 <- create_curve_set(list(r = as.numeric(years[-1]),
+#'                                  obs = curves[-1,] - curves[-nrow(curves),]))
+#'   plot(cset2)
+#'
+#'   # Order the girls from most extreme one to the least extreme one, below using the 'area' measure
+#'   # a) according to their heights
+#'   forder(cset1, measure = 'area')
+#'   # Print the 10 most extreme girl indices
+#'   order(forder(cset1, measure = 'area'))[1:10]
+#'   # b) according to the changes (print indices)
+#'   order(forder(cset2, measure = 'area'))[1:10]
+#'   # c) simultaneously with respect to heights and changes (print indices)
+#'   csets <- list(Height = cset1, Change = cset2)
+#'   order(forder(csets, measure = 'area'))[1:10]
 #' }
-forder <- function(curve_sets, r_min = NULL, r_max = NULL,
-                   measure = 'erl', scaling = 'qdir',
+forder <- function(curve_sets, measure = 'erl', scaling = 'qdir',
                    alternative=c("two.sided", "less", "greater"),
-                   use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7) {
+                   use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7,
+                   r_min = NULL, r_max = NULL) {
   if(class(curve_sets)[1] == "list") {
     curve_sets <- check_curve_set_dimensions(curve_sets)
     res <- combined_forder(curve_sets, r_min = r_min, r_max = r_max,
