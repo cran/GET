@@ -4,40 +4,29 @@ curve_set_results_to_image_results <- function(res_v, image_sets) {
   if(!(class(res_v)[1] %in% c("global_envelope", "combined_global_envelope"))) stop("Invalid res_v.\n")
   if(class(image_sets)[1] != "list") image_sets <- list(image_sets)
   obs_d <- dim(image_sets[[1]]$obs)
+  fillmatrix <- function(x) {
+    matrix(x, nrow=obs_d[1], ncol=obs_d[2])
+  }
+  fun <- function(vresult) {
+      res <- list(r=image_sets[[1]]$r)
+      if(!is.null(vresult$obs)) res <- c(res, list(obs=fillmatrix(vresult$obs)))
+      res <- c(res, list(central=fillmatrix(vresult$central),
+                              lo=fillmatrix(vresult$lo),
+                              hi=fillmatrix(vresult$hi)))
+      mostattributes(res) <- attributes(vresult)
+      attr(res, "xlab") <- attr(res, "xexp") <- attr(res, "ylab") <- attr(res, "yexp") <- attr(res, "call") <- NULL
+      class(res) <- c("global_envelope2d", "list")
+      res
+  }
   switch(class(res_v)[1],
     global_envelope = {
-      if(!is.null(res_v$obs)) {
-        res <- structure(list(r=list(rx=image_sets[[1]]$r[[1]], ry=image_sets[[1]]$r[[2]]),
-                              obs=matrix(res_v$obs, nrow=obs_d[1], ncol=obs_d[2]),
-                              central=matrix(res_v$central, nrow=obs_d[1], ncol=obs_d[2]),
-                              lo=matrix(res_v$lo, nrow=obs_d[1], ncol=obs_d[2]),
-                              hi=matrix(res_v$hi, nrow=obs_d[1], ncol=obs_d[2])))
-      }
-      else {
-        res <- structure(list(r=list(rx=image_sets[[1]]$r[[1]], ry=image_sets[[1]]$r[[2]]),
-                              central=matrix(res_v$central, nrow=obs_d[1], ncol=obs_d[2]),
-                              lo=matrix(res_v$lo, nrow=obs_d[1], ncol=obs_d[2]),
-                              hi=matrix(res_v$hi, nrow=obs_d[1], ncol=obs_d[2])))
-      }
-      mostattributes(res) <- attributes(res_v)
-      attr(res, "xlab") <- attr(res, "xexp") <- attr(res, "ylab") <- attr(res, "xexp") <- attr(res, "call") <- NULL
-      class(res) <- c("global_envelope2d", "list")
+      res <- fun(res_v)
     },
     combined_global_envelope = {
-      res <- list()
-      for(i in 1:length(res_v)) {
-        res[[i]] <- structure(list(r=list(rx=image_sets[[1]]$r[[1]], ry=image_sets[[1]]$r[[2]]),
-                                   obs=matrix(res_v[[i]]$obs, nrow=obs_d[1], ncol=obs_d[2]),
-                                   central=matrix(res_v[[i]]$central, nrow=obs_d[1], ncol=obs_d[2]),
-                                   lo=matrix(res_v[[i]]$lo, nrow=obs_d[1], ncol=obs_d[2]),
-                                   hi=matrix(res_v[[i]]$hi, nrow=obs_d[1], ncol=obs_d[2])))
-        mostattributes(res[[i]]) <- attributes(res_v[[i]])
-        attr(res[[i]], "xlab") <- attr(res[[i]], "xexp") <- attr(res[[i]], "ylab") <- attr(res[[i]], "xexp") <- attr(res[[i]], "call") <- NULL
-        class(res[[i]]) <- c("global_envelope2d", "list")
-      }
+      res <- lapply(res_v, fun)
       names(res) <- names(res_v)
       mostattributes(res) <- attributes(res_v)
-      attr(res, "xlab") <- attr(res, "xexp") <- attr(res, "ylab") <- attr(res, "xexp") <- attr(res, "call") <- NULL
+      attr(res, "xlab") <- attr(res, "xexp") <- attr(res, "ylab") <- attr(res, "yexp") <- attr(res, "call") <- NULL
       class(res) <- c("combined_global_envelope2d", "list")
     }
   )
@@ -258,15 +247,13 @@ plot.global_envelope2d <- function(x, plot_style = c("ggplot2", "basic"),
          },
          ggplot2 = {
            if(is.null(main)) main <- env_main_default(x, digits=digits)
-           w <- x$r$rx[2]-x$r$rx[1]
-           h <- x$r$ry[2]-x$r$ry[1]
            dfs <- env2d_ggplot2_helper(x, fixedscales=fixedscales)
            if(fixedscales) {
-             g <- env2d_ggplot2_helper_1(dfs, w, h, sign.col, transparency, contours)
+             g <- env2d_ggplot2_helper_1(dfs, sign.col, transparency, contours)
              g <- g + facet_wrap(vars(label))
              g + ggtitle(main)
            } else {
-             gs = env2d_ggplot2_helper_many_single_plots(dfs, w, h, sign.col, transparency, contours)
+             gs = env2d_ggplot2_helper_many_single_plots(dfs, sign.col, transparency, contours)
              p1 = grid.arrange(grobs=gs, nrow=ceiling(length(gs)/3), top=main)
            }
          })
@@ -320,23 +307,21 @@ plot.combined_global_envelope2d <- function(x, plot_style = c("ggplot2", "basic"
            if(is.null(names(x))) names(x) <- paste(1:length(x))
            if(is.null(main)) fullmain <- env_main_default(attr(x, "level2_ge"), digits=digits)
            else fullmain <- NULL
-           w <- x[[1]]$r$rx[2]-x[[1]]$r$rx[1]
-           h <- x[[1]]$r$ry[2]-x[[1]]$r$ry[1]
            dfs <- mapply(x, names(x), SIMPLIFY=FALSE, FUN=function(x, main) {
              env2d_ggplot2_helper(x, fixedscales=fixedscales, contours=contours, main=main, insertmain=!fixedscales)
            })
            if(fixedscales==2) {
              df <- do.call(rbind, dfs)
-             g <- env2d_ggplot2_helper_1(df, w, h, sign.col, transparency, contours) + facet_grid(rows=vars(main), cols=vars(label))
+             g <- env2d_ggplot2_helper_1(df, sign.col, transparency, contours) + facet_grid(rows=vars(main), cols=vars(label))
              g + ggtitle(fullmain)
            } else if(fixedscales==1) {
              gs <- lapply(dfs, function(df) {
-               env2d_ggplot2_helper_1(df, w, h, sign.col, transparency, contours) + facet_grid(rows=vars(main), cols=vars(label))
+               env2d_ggplot2_helper_1(df, sign.col, transparency, contours) + facet_grid(rows=vars(main), cols=vars(label))
              })
              grid.arrange(grobs=gs, ncol=1, top=fullmain)
            } else if(fixedscales==0) {
              gs <- lapply(dfs, function(dfs2) {
-               gs = env2d_ggplot2_helper_many_single_plots(dfs2, w, h, sign.col, transparency, contours)
+               gs = env2d_ggplot2_helper_many_single_plots(dfs2, sign.col, transparency, contours)
                grid.arrange(grobs=gs, nrow=1)
              })
              grid.arrange(grobs=gs, ncol=1, top=fullmain)

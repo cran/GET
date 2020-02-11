@@ -341,7 +341,6 @@ GEprinthelper <- function(x, ...) {
     if(!is.null(attr(x, "p_interval")))
       cat(" p-interval         : (", attr(x, "p_interval")[1], ", ", attr(x, "p_interval")[2],")\n", sep="")
   }
-  if(!is.null(attr(x, "alpha_star"))) cat(paste("The adjusted level of the test: ", attr(x, "alpha_star"), "\n", sep=""))
 }
 
 #' Print method for the class 'global_envelope'
@@ -378,6 +377,15 @@ print.combined_global_envelope <- function(x, ...) {
 #' @param ylim See \code{\link{plot.default}}. A sensible default exists.
 #' @param xlab See \code{\link{plot.default}}. A sensible default exists.
 #' @param ylab See \code{\link{plot.default}}. A sensible default exists.
+#' @param coord A data frame of the spatial coordinates where the data have been observed.
+#' \code{nrow(coord)} should match the length of \code{x$r}, and the names of the columns
+#' should be either "x", "y", "width", "height" or "xmin", "ymin", "xmax", "ymax".
+#' Here x and y should give the (center) coordinates of the observed data,
+#' width and height give the size of the pixel places at (x,y) (most often constants).
+#' The xmin, ymin, xmax, ymax give an alternative way to specify the pixels where the data have
+#' been observed, namely the corner locations of each pixel.
+#' If coord is provided, then a two-dimensional plot is made instead of 1-dimensional default
+#' plot.
 #' @param color_outside Logical. Whether to color the places where the data function goes
 #' outside the envelope. Currently red color is used. Relevant only for \code{plot_style = "basic"}.
 #' @param env.col The color for the envelope lines (or dotplot arrows). Default 1 (black).
@@ -396,14 +404,24 @@ print.combined_global_envelope <- function(x, ...) {
 plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
                                  dotplot = length(x$r)<10,
                                  main, ylim, xlab, ylab,
+                                 coord = NULL,
                                  color_outside = TRUE, env.col = 1, base_size = 11,
                                  labels = NULL, add = FALSE, digits = 3, legend = TRUE, ...) {
   plot_style <- match.arg(plot_style)
-  if(dotplot) plot_style <- "basic"
   # main
   if(missing('main')) {
-      main <- env_main_default(x, digits=digits)
+    main <- env_main_default(x, digits=digits)
   }
+  if(!is.null(coord)) {
+    if(!is.data.frame(coord)) stop("coord is not a data.frame object.\n")
+    if(nrow(coord) != length(x$r)) stop("The number of rows in coord should match the length of x$r.\n")
+    if(!(identical(names(coord), c("x", "y", "width", "height"))
+       || identical(names(coord), c("xmin", "ymin", "xmax", "ymax"))))
+      stop("Unreasonable coord provided. You should provide x, y, width and height, or xmin, ymin, xmax and ymax. See help page for further information.\n")
+    x$r <- coord
+    return(plot.global_envelope2d(x, plot_style = plot_style, main = main, digits = digits, ...))
+  }
+  if(dotplot) plot_style <- "basic"
   # ylim
   if(missing('ylim')) {
     ylim <- env_ylim_default(x, plot_style == "ggplot2")
@@ -443,6 +461,15 @@ plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
 }
 
 #' Plot method for the class 'combined_global_envelope'
+#'
+#' @description This function provides plots for combined global envelopes.
+#' Note that the argument \code{coord} is as for the single global envelopes
+#' (see \code{\link{plot.global_envelope}}), but its dimensions should match
+#' the dimensions of x[[i]] (for all i). That is, the plots with \code{coord}
+#' are currently provided only for the case where the components of the object \code{x}
+#' have the same \code{r}. This is suitable in particular for the functional ANOVA and
+#' functional general linear models (see \code{\link{graph.fanova}}, \code{\link{graph.flm}},
+#' \code{\link{frank.fanova}}, \code{\link{frank.flm}}) made for images.
 #' @param x An 'combined_global_envelope' object
 #' @inheritParams plot.global_envelope
 #' @param labels A character vector of suitable length.
@@ -458,7 +485,7 @@ plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
 #' @export
 #' @seealso \code{\link{central_region}}
 plot.combined_global_envelope <- function(x,
-                                 main, ylim = NULL, xlab, ylab,
+                                 main, ylim = NULL, xlab, ylab, coord = NULL,
                                  color_outside = TRUE, env.col = 1, base_size = 12,
                                  labels = NULL, add = FALSE, digits = 3,
                                  level = 1, ncol = 2 + 1*(length(x)==3), nticks = 5,
@@ -468,6 +495,17 @@ plot.combined_global_envelope <- function(x,
   if(missing('main')) {
     alt <- attr(x[[1]], "einfo")$alternative
     main <- env_main_default(attr(x, "level2_ge"), digits=digits, alternative=alt)
+  }
+  if(!is.null(coord)) {
+    if(!all(sapply(x, function(y) { identical(y$r, x[[1]]$r) })))
+      stop("The components of the combined test have different r. coord not supported.\n")
+    if(!is.data.frame(coord)) stop("coord is not a data.frame object.\n")
+    if(nrow(coord) != length(x[[1]]$r)) stop("The number of rows in coord should match the length of x[[i]]$r.\n")
+    if(!(identical(names(coord), c("x", "y", "width", "height"))
+         || identical(names(coord), c("xmin", "ymin", "xmax", "ymax"))))
+      stop("Unreasonable coord provided. You should provide x, y, width and height, or xmin, ymin, xmax and ymax. See help page for further information.\n")
+    for(i in 1:length(x)) x[[i]]$r <- coord
+    return(plot.combined_global_envelope2d(x, main = main, digits = digits, ...))
   }
   # ylab, ylab, labels
   if(missing('xlab'))

@@ -1,4 +1,4 @@
-# Check image_set dimensions
+# Check image_set dimensions and correct r
 check_image_set_dimensions <- function(image_set) {
   # Check dimensions
   obs_d <- dim(image_set$obs)
@@ -8,12 +8,28 @@ check_image_set_dimensions <- function(image_set) {
   if(length(r) > 0L) {
     if(!all(unlist(lapply(r, FUN=is.vector))) || !all(unlist(lapply(r, FUN=is.numeric))) || !all(unlist(lapply(r, FUN=is.finite)))) stop("Error in image_set[[\'r\']].\n")
     nr <- unlist(lapply(r, FUN=length))
-    if(length(nr) != 2 || !all(nr == c(obs_d[1], obs_d[2]))) stop("Unsuitable image_set[[\'r\']].\n")
-    w <- diff(r[[1]])
-    h <- diff(r[[2]])
-    allequal <- function(x) all(abs(x - x[1]) < 1e-10*x[1])
-    if(!allequal(w) || !allequal(h))
-      warning("The r values are not equally spaced. The plots do not yet support this case.\n")
+    if(length(r) == 2L) {
+      if(!all(names(r) %in% c("x", "y"))) stop("Dimension names should be x and y")
+      if(is.null(names(r))) {
+        names(r) <- c("x", "y")
+        image_set$r <- r
+      }
+      w <- diff(r$x)
+      h <- diff(r$y)
+      allequal <- function(x) all(abs(x - x[1]) < 1e-10*x[1])
+      if(!allequal(w) || !allequal(h)) stop("Unequal gridsize detected, please specify width and height of cells.")
+      if(length(r$x)!=obs_d[1] | length(r$y)!=obs_d[2]) stop("Unsuitable image_set[[\'r\']].\n")
+    } else if(identical(sort(names(r)), c("height", "width", "x", "y"))
+              || identical(sort(names(r)), c("xmax", "xmin", "ymax", "ymin"))) {
+      if(length(r$width) == 1) image_set$r$width <- rep(r$width, times=length(r$x))
+      else if(length(r$width)!=length(r$x)) stop("Unsuitable image_set[[\'r\']]: width should have the same length as x.\n")
+      if(length(r$height) == 1) image_set$r$height <- rep(r$height, times=length(r$y))
+      else if(length(r$height)!=length(r$x)) stop("Unsuitable image_set[[\'r\']]: height should have the same length as y.\n")
+      if(length(r$x)!=obs_d[1]) stop("Unsuitable image_set[[\'r\']]: the length of x does not match the dimension of obs matrix.\n")
+      if(length(r$y)!=obs_d[2]) stop("Unsuitable image_set[[\'r\']]: the length of y does not match the dimension of obs matrix.\n")
+    } else {
+      stop("Unsuitable image_set[[\'r\']].\n")
+    }
   }
   else {
     image_set$r <- list(x = 1:obs_d[1], y = 1:obs_d[2])
@@ -81,10 +97,15 @@ check_image_set_content <- function(image_set) {
 #'
 #' @param image_set A list containing elements \code{r}, \code{obs}, \code{sim_m} and \code{theo}.
 #'   \code{r}, \code{sim_m} and \code{theo} are optional, \code{obs} needs to be provided always.
-#'   \code{r} must be a list of two vectors describing the argument values where
-#'   images have been observed (or simulated).
-#'   r[[1]] should give the argument values for x-coordinate (first dimension of the 2d functions).
-#'   r[[2]] should give the argument values for y-coordinate (second dimension of the 2d functions).
+#'   If provided, \code{r} must be a \code{\link{data.frame}} describing the argument values
+#'   where the images have been observed (or simulated). It must consist of the following two or
+#'   four components:
+#'   a) "x" and "y" giving the equally spaced argument values for the x- and y-coordinates
+#'   (first and second dimension of the 2d functions) where the data have been observed,
+#'   b) "x", "y", "width" and "height", where the width and height give the width and height of the
+#'   pixels placed at x and y, or
+#'   c) "xmin", "xmax", "ymin" and "ymax" giving the corner coordinates of the pixels
+#'   where the data have been observed.
 #'   If not given, r is set to be a list of values from 1 to the number of first/second dimension
 #'   of 2d functions in \code{obs}.
 #'   \code{obs} must be either a 2d matrix (dimensions matching the lengths of r vectors)
@@ -101,7 +122,7 @@ check_image_set_content <- function(image_set) {
 #' @export
 create_image_set <- function(image_set, ...) {
   image_set <- check_image_set_dimensions(image_set) # Check image_set dimensions and assign r if it does not exist
-  image_set_to_curve_set(image_set) # convert the images to functions and check the values
+  image_set_to_curve_set(image_set) # convert the images to functions to check the values
   class(image_set) <- 'image_set'
   image_set
 }
