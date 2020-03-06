@@ -46,27 +46,16 @@ q_scaling <- function(curve_set, probs = c(0.025, 0.975), ...) {
 #
 # Used by \code{\link{qdir_scaling}}.
 #
-# @param x The matrix
+# @param x The matrix (or a vector)
 # @param upper_coeff Upper coefficient.
 # @param lower_coeff Lower coefficient.
 weigh_both_sides <- function(x, upper_coeff, lower_coeff) {
-    if (is.matrix(x)) {
-        dims <- dim(x)
-        y <- matrix(0, nrow = dims[1], ncol = dims[2],
-                    dimnames = dimnames(x))
-    } else if (is.vector(x)) {
-        y <- numeric(length(x))
-        names(y) <- names(x)
-    } else {
-        stop('x must be either a matrix or a vector.')
-    }
-
     upper_idx <- x > 0
     lower_or_equal_idx <- !upper_idx
 
-    y[upper_idx] <- (upper_coeff * x)[upper_idx]
-    y[lower_or_equal_idx] <- (lower_coeff * x)[lower_or_equal_idx]
-    y
+    x[upper_idx] <- (upper_coeff * x)[upper_idx]
+    x[lower_or_equal_idx] <- (lower_coeff * x)[lower_or_equal_idx]
+    x
 }
 
 # Directional quantile scaling.
@@ -86,15 +75,9 @@ qdir_scaling <- function(curve_set, probs = c(0.025, 0.975), ...) {
     lower_coeff <- abs_coeff[1, , drop = TRUE]
     upper_coeff <- abs_coeff[2, , drop = TRUE]
 
-    res <- with(curve_set, list(r = r,
-                                obs = weigh_both_sides(obs, upper_coeff,
-                                      lower_coeff)))
-    if(!is.null(curve_set[['sim_m']]))
-      res[['sim_m']] <- weigh_both_sides(curve_set[['sim_m']], upper_coeff, lower_coeff)
-    res[['is_residual']] <- TRUE
+    curve_set[['funcs']] <- weigh_both_sides(curve_set[['funcs']], upper_coeff, lower_coeff)
 
-    res <- create_curve_set(res)
-    res
+    curve_set
 }
 
 # Scale curves.
@@ -151,9 +134,8 @@ divisor_to_coeff <- function(x) {
 # @inheritParams st_scaling
 # @param coeff The coefficient vector, often of the length of one curve.
 weigh_curves <- function(curve_set, coeff) {
-    curve_set[['obs']] <- coeff * curve_set[['obs']]
-    if(!is.null(curve_set[['sim_m']])) curve_set[['sim_m']] <- coeff * curve_set[['sim_m']]
-    if (length(curve_set[['theo']]) > 0L) {
+    curve_set[['funcs']] <- coeff * curve_set[['funcs']]
+    if(!is.null(curve_set[['theo']])) {
         curve_set[['theo']] <- coeff * curve_set[['theo']]
     }
     curve_set
@@ -164,7 +146,7 @@ weigh_curves <- function(curve_set, coeff) {
 # @param probs A vector to be checked.
 check_probs <- function(probs) {
     # Leave further validity checking of probs and type to quantile.
-    if (length(probs) != 2L || !all(is.finite(probs)) ||
+    if(length(probs) != 2L || !all(is.finite(probs)) ||
         probs[1] >= probs[2] ||
         probs[1] < 0 || probs[2] < 0 || probs[1] > 1 || probs[2] > 1) {
         stop('probs must be a two-element vector with both values finite \n',

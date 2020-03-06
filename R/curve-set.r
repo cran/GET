@@ -1,28 +1,17 @@
-#' Turn an \code{\link[spatstat]{envelope}} object into a curve_set object.
-#'
-#' @param env An \code{\link[spatstat]{envelope}} object. The envelope()
-#'   functions must have been called with savefuns = TRUE.
-#' @return A corresponding curve_set object.
-#' @param ... Do not use. (For internal use only.)
-#' @export
+# Turn an \code{\link[spatstat]{envelope}} object into a curve_set object.
+#
+# @param env An \code{\link[spatstat]{envelope}} object. The envelope()
+#   functions must have been called with savefuns = TRUE.
+# @return A corresponding curve_set object.
+# @param ... Do not use. (For internal use only.)
 envelope_to_curve_set <- function(env, ...) {
   if(!inherits(env, 'envelope')) {
     stop('env is not an envelope object.')
   }
 
   r <- env[['r']]
-  n_r <- length(r)
-  if(n_r < 1L) {
-    stop('env[["r"]] must exist.')
-  }
-
-  obs <- env[['obs']]
-  if(length(obs) != n_r) {
-    stop('env[["obs"]] and env[["r"]] must have the same length.')
-  }
-
   simfuns_fv <- attr(env, 'simfuns', exact = TRUE)
-  if(length(simfuns_fv) < 1L) {
+  if(is.null(simfuns_fv)) {
     stop('env did not include the simulated curve set. envelope must ',
          'be run with savefuns = TRUE.')
   }
@@ -39,25 +28,15 @@ envelope_to_curve_set <- function(env, ...) {
 
   # Dimensions: r_idx, sim_idx.
   sim_m <- as.matrix(simulation_df[, !(simulation_df_names %in% 'r')])
-  if(nrow(sim_m) != n_r) {
-    stop('simulated curves must have the same length as r.')
-  }
 
   theo <- env[['theo']]
-  n_theo <- length(theo)
-  # If theo exists it must be correct.
-  if(n_theo > 0L && n_theo != n_r) {
-    stop('env[["theo"]] and env[["r"]] must have the same length.')
-  }
 
-  res <- list(r = r, obs = obs, sim_m = sim_m)
-  if(n_theo > 0L) {
+  res <- list(r = r, obs = env[['obs']], sim_m = sim_m)
+  if(!is.null(theo)) {
     res[['theo']] <- theo
   }
-  res[['is_residual']] <- FALSE
 
-  res <- create_curve_set(res, ...)
-  res
+  create_curve_set(res, ...)
 }
 
 # Turn an \code{\link[fda.usc]{fdata}} object into a curve_set object.
@@ -69,24 +48,11 @@ fdata_to_curve_set <- function(fdata, ...) {
   if(!inherits(fdata, 'fdata')) {
     stop('fdata is not a fdata object.')
   }
-  if(!is.null(fdata[['fdata2d']]) && fdata[['fdata2d']])
-    stop("No support for converting this type of functional data, only functional data observed in a single grid supported.\n")
-
   r <- fdata[['argvals']]
-  n_r <- length(r)
-  if(n_r < 1L) {
-    stop('fdata[["argvals"]] must exist.')
-  }
+  if(is.list(r))
+    stop("No support for converting this type of functional data, only functional data observed in a single grid supported.")
 
-  obs <- t(fdata[['data']])
-  if(nrow(obs) != n_r) {
-    stop('Number of functions in fdata[["data"]] and the length of fdata[["argvals"]] must be equal.')
-  }
-
-  res <- list(r = r, obs = obs)
-
-  res <- create_curve_set(res, ...)
-  res
+  create_curve_set(list(r = r, obs = t(fdata[['data']])), ...)
 }
 
 # Check the content validity of a potential curve_set object.
@@ -96,7 +62,19 @@ fdata_to_curve_set <- function(fdata, ...) {
 # values in an \code{\link[spatstat]{envelope}} object at the first place, if those are cropped
 # away (in \code{\link{crop_curves}}).
 check_curve_set_content <- function(curve_set, allow_Inf_values = FALSE) {
-  possible_names <- c('r', 'obs', 'sim_m', 'theo', 'is_residual')
+  if(inherits(curve_set, "curve_set")) {
+    if(!allow_Inf_values) {
+      if(!all(is.finite(curve_set[['funcs']]))) {
+        stop('All curves must have only finite values.')
+      }
+      if(!all(is.finite(curve_set[['theo']]))) {
+        stop('The theoretical values should be finite.')
+      }
+    }
+    return(curve_set)
+  }
+
+  possible_names <- c('r', 'obs', 'sim_m', 'theo')
 
   n <- length(curve_set)
   if(n < 1L) {
@@ -115,74 +93,73 @@ check_curve_set_content <- function(curve_set, allow_Inf_values = FALSE) {
          ' names: ', paste(possible_names, collapse = ', '))
   }
 
-  r <- curve_set[['r']]
-  n_r <- length(r)
-  if(n_r < 1L) {
-    stop('curve_set[["r"]] must have at least one element.')
-  }
-  if(!is.vector(r)) {
-    stop('curve_set[["r"]] must be a vector.')
-  }
-  if(!all(is.numeric(r)) || !all(is.finite(r))) {
-    stop('curve_set[["r"]] must have only finite numeric values.')
-  }
-
   obs <- curve_set[['obs']]
-  if(!is.vector(obs) & !is.matrix(obs)) {
+  if(is.vector(obs)) narg <- length(obs)
+  else if(is.matrix(obs)) narg <- nrow(obs)
+  else {
     stop('curve_set[["obs"]] must be a vector or a matrix.')
-  }
-  if((is.vector(obs) && length(obs) != n_r) | (is.matrix(obs) && nrow(obs) != n_r)) {
-    stop('curve_set[["obs"]] must have as many values or rows as ',
-         'curve_set[["r"]].')
   }
   if(!(allow_Inf_values | ( all(is.numeric(obs)) && all(is.finite(obs)) ))) {
     stop('curve_set[["obs"]] must have only finite numeric values.')
   }
 
+  r <- curve_set[['r']]
+  if(is.null(r)) n_r <- narg
+  else if(is.data.frame(r)) {
+    if(!(identical(sort(names(r)), c("height", "width", "x", "y"))
+       || identical(sort(names(r)), c("xmax", "xmin", "ymax", "ymin"))))
+      stop('The names of curve_set[[\'r\']] must be either c("height", "width", "x", "y") or c("xmax", "xmin", "ymax", "ymin").\n')
+    n_r <- nrow(r)
+    if(!all(sapply(r, is.numeric)) || !all(sapply(r, is.finite))) {
+      stop('curve_set[["r"]] must have only finite numeric values.')
+    }
+  }
+  else if(is.vector(r)) {
+    if(!all(is.numeric(r)) || !all(is.finite(r))) {
+      stop('curve_set[["r"]] must have only finite numeric values.')
+    }
+    n_r <- length(r)
+  }
+  else {
+    stop("If r given, it must be either a vector or a data.frame.")
+  }
+  if(n_r != narg) {
+    stop('curve_set[["r"]] must be compatible with curve_set[["obs"]].')
+  }
+
   sim_m <- curve_set[['sim_m']]
-  if(length(sim_m) > 0L) {
+  if(!is.null(sim_m)) {
     dim_sim_m <- dim(sim_m)
     if(!is.matrix(sim_m)) {
       stop('curve_set[["sim_m"]] must be a matrix.')
     }
-    if(dim_sim_m[1] != n_r) {
+    if(dim_sim_m[1] != narg) {
       stop('curve_set[["sim_m"]] must have as many rows as there are ',
-           'elements in curve_set[["r"]].')
+           'elements in curve_set[["obs"]].')
     }
     if(dim_sim_m[2] < 1L) {
       stop('curve_set[["sim_m"]] must have at least one column.')
     }
-    if(!(allow_Inf_values | ( all(is.numeric(sim_m)) && all(is.finite(sim_m)) ))) {
+    if(!(allow_Inf_values | ( is.numeric(sim_m) && all(is.finite(sim_m)) ))) {
       stop('curve_set[["sim_m"]] must have only finite numeric values.')
     }
   }
 
   theo <- curve_set[['theo']]
-  n_theo <- length(theo)
-  if(n_theo > 0L) {
-    if(n_theo != n_r) {
+  if(!is.null(theo)) {
+    n_theo <- length(theo)
+    if(is.null(sim_m)) stop("theo can be provided only with sim_m.")
+    if(n_theo != narg) {
       stop('curve_set[["theo"]] must have as many values as ',
-           'curve_set[["r"]].')
+           'curve_set[["obs"]].')
     }
     if(!is.vector(theo)) {
       stop('curve_set[["theo"]] must be a vector.')
     }
-    if(!(allow_Inf_values | ( all(is.numeric(theo)) && all(is.finite(theo)) ))) {
+    if(!(allow_Inf_values | ( is.numeric(theo) && all(is.finite(theo)) ))) {
       stop('curve_set[["theo"]] must have only finite numeric ',
            'values.')
     }
-  }
-
-  is_residual <- curve_set[['is_residual']]
-  n_is_residual <- length(is_residual)
-  if(n_is_residual > 0L && (n_is_residual != 1L ||
-                             !is.logical(is_residual) ||
-                             !is.finite(is_residual))) {
-    stop('curve_set[["is_residual"]] must be either TRUE or FALSE.')
-  }
-
-  if(n_is_residual > 0L && is_residual && n_theo > 0L) {
-    stop('A residual curve set must not contain a theoretical curve.')
   }
 
   curve_set
@@ -240,36 +217,60 @@ convert_fdata <- function(curve_set, ...) {
 # Check that the curve_set object portrays residual curves.
 # @param curve_set A 'curve_set' object
 check_residualness <- function(curve_set) {
-  is_residual <- curve_set[['is_residual']]
-  if(length(is_residual) < 1L || !is_residual) {
+  if(!curve_set_isresidual(curve_set)) {
     stop('curve_set must consist of residual curves. Run function ',
          'residual first.')
   }
-  invisible(curve_set)
 }
 
+#' Create a curve set
+#'
 #' Create a curve set out of a list in the right form.
 #'
-#' @param curve_set A list containing elements r, obs, and optionally
-#'   the elements sim_m and theo.
-#'   \code{r} must be a vector describing the radius vector, the argument values where
-#'   functions have been observed (or simulated).
-#'   \code{obs} must be either 1) a vector containing the data function, in which case
-#'   \code{obs} must have same length as \code{r}, or
-#'   2) a matrix containing the s data functions, in which case it is assumed that
-#'   each column corresponds to a data function, and the number of rows must match the length or r.
-#'   If \code{obs} is a vector, \code{sim_m} must be a matrix containing the simulated functions.
-#'   Each column is assumed to correspond to a function, and the number of rows must match the
-#'   length of r. If \code{obs} is a matrix, \code{sim_m} is ignored.
-#'   If included, \code{theo} corresponds to the theoretical function (e.g., under the null hypothesis).
-#'   If present, its length must match the length of \code{r}.
-#' @param ... Do not use. (For internal use only.)
-#' @return The given list adorned with the proper class name.
+#'
+#' \code{obs} must be either
+#' \itemize{
+#' \item a vector containing the data function, or
+#' \item a matrix containing the s data functions, in which case it is assumed that
+#' each column corresponds to a data function.
+#' }
+#'
+#' If given, \code{r} describes the 1- or 2-dimensional argument values where the curves have been observed (or
+#' simulated). It must be either
+#' \itemize{
+#' \item a vector,
+#' \item a data.frame with columns "x", "y", "width" and "height",
+#' where the width and height give the width and height of the pixels placed at x and y, or
+#' \item a data.frame with columns "xmin", "xmax", "ymin" and "ymax" giving the corner coordinates of the pixels
+#' where the data have been observed.
+#' }
+#'
+#' If \code{obs} is a vector, \code{sim_m} must be a matrix containing the simulated functions.
+#' Each column is assumed to correspond to a function, and the number of rows must match the
+#' length of \code{obs}. If \code{obs} is a matrix, \code{sim_m} is ignored.
+#'
+#' If \code{obs} is a vector, \code{theo} can be given and it should then correspond
+#' to a theoretical function (e.g., under the null hypothesis). If present, its length must match the length of
+#' \code{obs}.
+#' @param curve_set A list containing the element obs, and optionally
+#'   the elements r, sim_m and theo. See details.
+#' @param ... For expert use only.
+#' @return An object of class \code{curve_set}.
 #' @export
 create_curve_set <- function(curve_set, ...) {
   check_curve_set_content(curve_set, ...)
-  class(curve_set) <- 'curve_set'
-  curve_set
+  is1obs <- is.vector(curve_set[['obs']])
+  if(is1obs) {
+    funcs <- cbind(curve_set[['obs']], curve_set[['sim_m']])
+    colnames(funcs) <- c('obs', paste("sim", 1:(ncol(funcs)-1), sep=""))
+  }
+  else funcs <- curve_set[['obs']]
+  if(!is.null(curve_set[['r']])) r <- curve_set[['r']]
+  else r <- 1:nrow(funcs)
+  cset <- list(r = r, funcs = funcs, is1obs = is1obs)
+  if(!is.null(curve_set[['theo']])) cset$theo <- curve_set[['theo']]
+  class(cset) <- 'curve_set'
+  cset
 }
 
 #' Check class.
@@ -318,11 +319,8 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
                            col_obs = 1, col_sim = grDevices::grey(0.7),
                            base_size = 11, ...) {
   plot_style <- match.arg(plot_style)
-  if(with(x, is.matrix(obs))) {
-    funcs <- x[['obs']]
-    col_sim <- col_obs
-  }
-  else funcs <- cbind(x[['obs']], x[['sim_m']])
+  funcs <- curve_set_funcs(x)
+  if(!curve_set_is1obs(x)) col_sim <- col_obs
   rdata <- combined_global_envelope_rhelper(x)
   if(rdata$retick_xaxis) {
     rvalues <- rdata$new_r_values
@@ -374,38 +372,18 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
 # @param equalr Whether to demand equal lengths of r vectors of the different curve sets
 # @return A curve set that is a combination of the curve sets given in 'x'.
 combine_curve_sets <- function(x, equalr = TRUE) {
-  cset <- NULL
   x <- check_curve_set_dimensions(x, equalr=equalr)
-  name_vec <- lapply(x, FUN=names)
-  if('r' %in% name_vec[[1]]) {
-    cset$r <- c(sapply(x, FUN=function(curve_set) { curve_set['r'] }), recursive=TRUE)
+  cset <- x[[1]]
+  # Combine
+  cset$funcs <- do.call(rbind, lapply(x, FUN=function(curve_set) { curve_set[['funcs']] }))
+  if(!is.null(x[[1]][['r']])) {
+    if(is.vector(x[[1]]$r)) cset$r <- do.call(c, lapply(x, FUN=function(curve_set) { curve_set[['r']] }))
+    else cset$r <- do.call(rbind, lapply(x, FUN=function(curve_set) { curve_set[['r']] }))
   }
-  if('obs' %in% name_vec[[1]]) {
-    if(is.matrix(x[[1]]$obs)) {
-      cset$obs <- matrix(nrow=sum(sapply(x, FUN=function(curve_set) {dim(curve_set$obs)[1]})), ncol=dim(x[[1]]$obs)[2])
-      for(i in 1:dim(x[[1]]$obs)[2]) {
-        cset$obs[,i] <- c(sapply(x, FUN=function(curve_set) { curve_set$obs[,i] }), recursive=TRUE)
-      }
-    }
-    else {
-      cset$obs <- c(sapply(x, FUN=function(curve_set) { curve_set['obs'] }), recursive=TRUE)
-    }
-  }
-  if('sim_m' %in% name_vec[[1]]) {
-    # check_curve_set_dimensions was used above to check that dimensions match
-    # Combine
-    cset$sim_m <- matrix(nrow=sum(sapply(x, FUN=function(curve_set) {dim(curve_set$sim_m)[1]})), ncol=dim(x[[1]]$sim_m)[2])
-    for(i in 1:dim(x[[1]]$sim_m)[2]) {
-      cset$sim_m[,i] <- c(sapply(x, FUN=function(curve_set) { curve_set$sim_m[,i] }), recursive=TRUE)
-    }
-  }
-  if('theo' %in% name_vec[[1]])
-    cset$theo <- c(sapply(x, FUN=function(curve_set) { curve_set['theo'] }), recursive=TRUE)
-  # check_curve_set_dimensions has checked that 'is_residual' is the same for all curve sets.
-  if('is_residual' %in% name_vec[[1]])
-    cset$is_residual <- x[[1]]$is_residual
+  if(!is.null(x[[1]][['theo']]))
+    cset$theo <- do.call(c, lapply(x, FUN=function(curve_set) { curve_set[['theo']] }))
   # Return the combined set of curves
-  create_curve_set(cset)
+  cset
 }
 
 # Check curve set dimensions
@@ -416,83 +394,108 @@ combine_curve_sets <- function(x, equalr = TRUE) {
 # @inheritParams combine_curve_sets
 check_curve_set_dimensions <- function(x, equalr=FALSE) {
   x <- lapply(x, FUN=convert_envelope)
-  name_vec <- lapply(x, FUN=function(x) { n <- names(x); n[n!="theo"] })
-  # Possible_names in curve_sets are 'r', 'obs', 'sim_m', 'theo' and 'is_residual'.
-  # Check that all curve sets contain the same elements
-  if(!all(sapply(name_vec, FUN=identical, y=name_vec[[1]])))
-    stop("The curve sets in \'x\' contain different elements.\n")
+  checkequal <- function(f) {
+    all(sapply(x, FUN=function(curve_set) { f(curve_set) == f(x[[1]]) }))
+  }
   if(equalr) {
-    # Check equality of length of r
-    if(!all(sapply(x, FUN=function(curve_set) { length(curve_set$r) == length(x[[1]]$r) })))
-      stop("The lengths of 'r' in curve sets differ.\n")
+    if(!checkequal(curve_set_narg))
+      stop("The lengths of 'r' in curve sets differ.")
   }
-  # Check that 'is_residual' is the same for all curve sets.
-  if('is_residual' %in% name_vec[[1]]) {
-    if(!all(sapply(x, FUN=function(curve_set) { curve_set$is_residual == x[[1]]$is_residual })))
-      stop("The element \'is_residual\' should be the same for each curve set.\n")
-  }
-  # Check that the number of functions in 'obs' in curve sets are equal.
-  if('obs' %in% name_vec[[1]]) {
-    if(all(sapply(x, FUN=is.matrix))) {
-      if(!all(sapply(x, FUN=function(curve_set) { dim(curve_set$obs)[2] == dim(x[[1]]$obs)[2] })))
-        stop("The numbers of functions in 'obs' in curve sets differ.\n")
-    }
-  }
-  # Check that the number of functions in 'sim_m' in curve sets are equal.
-  if('sim_m' %in% name_vec[[1]]) {
-    if(!all(sapply(x, FUN=function(curve_set) { dim(curve_set$sim_m)[2] == dim(x[[1]]$sim_m)[2] })))
-      stop("The numbers of functions in 'sim_m' in curve sets differ.\n")
-  }
+  if(!checkequal(curve_set_isresidual))
+    stop("The element \'is_residual\' should be the same for each curve set.")
+  if(!checkequal(curve_set_nfunc))
+    stop("The numbers of functions in curve sets differ.")
+  if(!checkequal(curve_set_is1obs))
+    stop("The numbers of observed functions in curve sets differ.")
   x
 }
 
 # A helper function to return all the functions from a curve set in a matrix.
-# If obs is a vector, then the returned matrix will contain the obs vector on its first row.
-# If obs is a matrix, then the returned matrix will be a transpose of obs.
+# Each row corresponds to a function.
 data_and_sim_curves <- function(curve_set) {
-  if(with(curve_set, is.matrix(obs))) funcs <- t(curve_set[['obs']]) # all rows data (sim_m ignored)
-  else {
-    funcs <- rbind(curve_set[['obs']], t(curve_set[['sim_m']])) # first row data, rest simulations
-    rownames(funcs) <- c('obs', paste("sim", 1:(nrow(funcs)-1), sep=""))
-  }
-  funcs
+  t(curve_set[['funcs']])
+}
+# A helper function to return all the functions from a curve set in a matrix.
+# Each column corresponds to a function.
+curve_set_funcs <- function(curve_set) {
+  curve_set[['funcs']]
 }
 
 # A helper function to obtain the mean of functions in curve_set.
 #
-# Calculate the mean of all the functions in the curve_set (obs and sim_m).
+# Calculate the mean of all the functions in the curve_set.
 curve_set_mean <- function(curve_set) {
-  funcs <- data_and_sim_curves(curve_set)
-  apply(funcs, MARGIN = 2, FUN = mean)
+  rowMeans(curve_set[['funcs']])
 }
 
-# A helper function to obtain the median of functions in curve_set.
-#
-# Calculate the median of all the functions in the curve_set (obs and sim_m).
+
+# A helper function to apply the function f to the curve_set functions at all argument values
+applyr <- function(curve_set, f) {
+  funcs <- curve_set[['funcs']]
+  sapply(1:nrow(funcs), function(i) { f(funcs[i,]) })
+}
+
+# A helper function to obtain the median of all the functions in curve_set.
 #' @importFrom stats median
 curve_set_median <- function(curve_set) {
-  funcs <- data_and_sim_curves(curve_set)
-  apply(funcs, MARGIN = 2, FUN = median)
+  applyr(curve_set, median)
 }
 
-# A helper function to obtain the sd of functions in curve_set.
-#
-# No matter whether obs is a matrix or a vector, the quantiles are calculated
-# from all the functions in 'obs' and 'sim_m'.
+# A helper function to obtain the sd of all the functions in curve_set.
 #' @importFrom stats sd
 curve_set_sd <- function(curve_set) {
-  funcs <- data_and_sim_curves(curve_set)
-  apply(funcs, MARGIN = 2, FUN = sd)
+  applyr(curve_set, sd)
 }
 
-# A helper function to obtain the quantiles of functions in curve_set.
-#
-# No matter whether obs is a matrix or a vector, the quantiles are calculated
-# from all the functions in 'obs' and 'sim_m'.
+# A helper function to obtain the quantiles of all the functions in curve_set.
 # @param ... Additional parameters passed to \code{\link[stats]{quantile}}.
 #' @importFrom stats quantile
 curve_set_quant <- function(curve_set, probs, ...) {
-  funcs <- data_and_sim_curves(curve_set)
-  # Dimensions: 2, r_idx.
-  apply(funcs, MARGIN = 2, FUN = quantile, probs = probs, ...)
+  applyr(curve_set, function(x) { quantile(x, probs=probs, ...) }) # Dimensions: 2, r_idx.
+}
+
+# Number of arguments where the curves have been evaluated
+curve_set_narg <- function(curve_set) {
+  nrow(curve_set[['funcs']])
+}
+
+# Number of curves
+curve_set_nfunc <- function(curve_set) {
+  ncol(curve_set[['funcs']])
+}
+
+# Return curve_set$r as a data.frame
+curve_set_rdf <- function(curve_set) {
+  r <- curve_set[['r']]
+  if(is.vector(r)) data.frame(r=r)
+  else r
+}
+
+curve_set_isresidual <- function(curve_set) {
+  x <- curve_set[['is_residual']]
+  if(is.null(x)) FALSE
+  else x
+}
+
+# Check whether there is also one observed function (and many simulated ones), i.e.
+# the case of Monte Carlo and permutation tests.
+curve_set_is1obs <- function(curve_set) {
+  curve_set[['is1obs']]
+}
+
+curve_set_1obs <- function(curve_set) {
+  if(curve_set_is1obs(curve_set)) curve_set[['funcs']][,1]
+  else stop("Internal error.")
+}
+
+#' Subsetting curve sets
+#'
+#' Return subsets of curve sets which meet conditions.
+#' @param x A \code{curve_set} object.
+#' @param subset A logical expression indicating curves to keep.
+#' @param ... Ignored.
+#' @export
+subset.curve_set <- function(x, subset, ...) {
+  x[['funcs']] <- x[['funcs']][, subset]
+  x
 }

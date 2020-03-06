@@ -1,45 +1,77 @@
 # Continuous pointwise ranks
 #
 # Calculate continuous pointwise ranks of the curves from the largest (smallest rank)
-# to the smallest (largest rank).
-cont_pointwise_hiranks <- function(data_and_sim_curves) {
-  Nfunc <- dim(data_and_sim_curves)[1]
-  nr <- dim(data_and_sim_curves)[2]
-  RRR <- array(0, c(Nfunc, nr))
-  for(i in 1:nr) {
-    y <- data_and_sim_curves[,i]
-    ordery <- order(y, decreasing = TRUE) # index of function values at "i" from largest to smallest
-    y <- y[ordery]
-    ties <- y[1:(Nfunc-2)] == y[3:Nfunc] # same as j = 2:(Nfunc-1); ties <- y[j-1] == y[j+1]
-    RR <- 0:(Nfunc-1) # Initialize the vector with j-1 (values for the case of ties)
-    RR[1] <- exp(-(y[1]-y[2])/(y[2]-y[Nfunc]))
-    if(!any(ties)) {
-      RR[2:(Nfunc-1)] <- 1:(Nfunc-2)+(y[1:(Nfunc-2)]-y[2:(Nfunc-1)])/(y[1:(Nfunc-2)]-y[3:Nfunc])
-      # same as j <- 2:(Nfunc-1); RR[j] <- j-1+(y[j-1]-y[j])/(y[j-1]-y[j+1])
-    }
-    else { # The case of some ties
-      j <- (2:(Nfunc-1))[!ties]
-      jm1 <- j-1
-      RR[j] <- jm1+(y[jm1]-y[j])/(y[jm1]-y[j+1])
-      # Treat ties
-      j <- 1
-      while(j <= Nfunc-2) {
-        k <- 1
-        if(ties[j]) {
-          k <- 3; S <- 3*j+3
-          while(j+k <= Nfunc && y[j] == y[j+k]) { k <- k+1; S <- S+j+k }
-          for(t in j:(j+k-1)) { RR[t] <- S/k }
-        }
-        j <- j+k
-      }
-    }
-    RRR[ordery, i] <- RR
+# to the smallest (largest rank) for the data in the vector y (corresponding to functions at an argument value (r)).
+contrank <- function(y, ordery=order(y, decreasing=TRUE)) {
+  Nfunc <- length(y)
+  y <- y[ordery]
+  ties <- y[1:(Nfunc-2)] == y[3:Nfunc] # same as j = 2:(Nfunc-1); ties <- y[j-1] == y[j+1]
+  RR <- 0:(Nfunc-1) # Initialize the vector with j-1 (values for the case of ties)
+  RR[1] <- exp(-(y[1]-y[2])/(y[2]-y[Nfunc]))
+  if(!any(ties)) {
+    RR[2:(Nfunc-1)] <- 1:(Nfunc-2)+(y[1:(Nfunc-2)]-y[2:(Nfunc-1)])/(y[1:(Nfunc-2)]-y[3:Nfunc])
+    # same as j <- 2:(Nfunc-1); RR[j] <- j-1+(y[j-1]-y[j])/(y[j-1]-y[j+1])
   }
-  RRR
+  else { # The case of some ties
+    j <- (2:(Nfunc-1))[!ties]
+    jm1 <- j-1
+    RR[j] <- jm1+(y[jm1]-y[j])/(y[jm1]-y[j+1])
+    # Treat ties
+    j <- 1
+    while(j <= Nfunc-2) {
+      k <- 1
+      if(ties[j]) {
+        k <- 3; S <- 3*j+3
+        while(j+k <= Nfunc && y[j] == y[j+k]) { k <- k+1; S <- S+j+k }
+        for(t in j:(j+k-1)) { RR[t] <- S/k }
+      }
+      j <- j+k
+    }
+  }
+  RR[ordery] <- RR
+  RR
+}
+
+# @return A function to calculate pointwise rank in different situations given by the measure and the alternative
+find_calc_pointwiserank <- function(measure, alternative) {
+  if(measure %in% c('rank', 'erl')) {
+    avrank <- function(x) { rank(x, ties.method = "average") }
+    switch(alternative,
+           "two.sided" = {
+             function(x) {
+               loranks <- avrank(x)
+               hiranks <- length(x)+1-loranks
+               pmin(loranks, hiranks)
+             }
+           },
+           "less" = {
+             function(x) { avrank(x) }
+           },
+           "greater" = {
+             function(x) { length(x)+1-avrank(x) }
+           })
+  }
+  else if(measure %in% c('cont', 'area')) {
+    switch(alternative,
+           "two.sided" = {
+             function(y) {
+               ordery <- order(y, decreasing = TRUE)
+               hiranks <- contrank(y, ordery)
+               loranks <- contrank(-y, rev(ordery))
+               pmin(loranks, hiranks)
+             }
+           },
+           "less" = {
+             function(y) { contrank(-y) }
+           },
+           "greater" = {
+             function(y) { contrank(y) }
+           })
+  } else { stop("Internal error in GET.")}
 }
 
 # Functionality for functional ordering based on a curve set
-individual_forder <- function(curve_set, r_min = NULL, r_max = NULL,
+individual_forder <- function(curve_set,
                               measure = 'erl', scaling = 'qdir',
                               alternative=c("two.sided", "less", "greater"),
                               use_theo = TRUE,
@@ -47,48 +79,27 @@ individual_forder <- function(curve_set, r_min = NULL, r_max = NULL,
   possible_measures <- c('rank', 'erl', 'cont', 'area', 'max', 'int', 'int2')
   if(!(measure %in% possible_measures)) stop("Unreasonable measure argument!\n")
 
-  curve_set <- crop_curves(curve_set, r_min = r_min, r_max = r_max) # Checks also curve_set content
+  curve_set <- convert_envelope(curve_set)
 
   if(measure %in% c('max', 'int', 'int2')) {
     curve_set <- residual(curve_set, use_theo = use_theo)
     curve_set <- scale_curves(curve_set, scaling = scaling, probs = probs, type = quantile.type)
-    data_and_sim_curves <- data_and_sim_curves(curve_set)
-    # Create a tmp object with the first curve as 'obs' (deviation expects that)
-    curve_set_tmp <- create_curve_set(list(r=curve_set[['r']],
-                                           obs=data_and_sim_curves[1,],
-                                           sim_m=t(data_and_sim_curves[-1,]),
-                                           is_residual=curve_set[['is_residual']]))
-    devs <- deviation(curve_set_tmp, measure = measure)
-    distance <- c(devs$obs, devs$sim)
+    distance <- deviation(curve_set, measure = measure)
   }
   else {
     alternative <- match.arg(alternative)
     data_and_sim_curves <- data_and_sim_curves(curve_set)
     Nfunc <- dim(data_and_sim_curves)[1]
-    nr <- length(curve_set[['r']])
-    scaling <- NULL
+    nr <- curve_set_narg(curve_set)
 
-    # calculate pointwise ranks
-    if(measure %in% c('rank', 'erl')) {
-      loranks <- apply(data_and_sim_curves, MARGIN=2, FUN=rank, ties.method = "average")
-      hiranks <- Nfunc+1-loranks
+    # Calculate pointwise ranks for each argument value (r)
+    calc_pointwiserank <- find_calc_pointwiserank(measure, alternative)
+    for(i in 1:nr) {
+      data_and_sim_curves[,i] <- calc_pointwiserank(data_and_sim_curves[,i]) # overwriting curves by their ranks
     }
-    else { # 'cont', 'area'
-      if(alternative != "less") hiranks <- cont_pointwise_hiranks(data_and_sim_curves)
-      if(alternative != "greater") loranks <- cont_pointwise_hiranks(-data_and_sim_curves)
-    }
-    switch(alternative,
-           "two.sided" = {
-             allranks <- pmin(loranks, hiranks)
-           },
-           "less" = {
-             allranks <- loranks
-           },
-           "greater" = {
-             allranks <- hiranks
-           })
+    allranks <- data_and_sim_curves
 
-    # calculate measures from the pointwise ranks
+    # Calculate measures from the pointwise ranks
     switch(measure,
            rank = {
              distance <- apply(allranks, MARGIN=1, FUN=min) # extreme ranks R_i
@@ -130,7 +141,7 @@ combined_forder <- function(curve_sets, ...) {
   # Create a curve_set for the ERL test
   k_ls <- lapply(res_ls, FUN = function(x) x$distance)
   k_mat <- do.call(rbind, k_ls, quote=FALSE)
-  curve_set_u <- create_curve_set(list(r=1:ntests, obs=k_mat, is_residual=FALSE))
+  curve_set_u <- create_curve_set(list(r=1:ntests, obs=k_mat))
   # Construct the one-sided ERL central region
   if(res_ls[[1]]$measure %in% c('max', 'int', 'int2')) alt2 <- "greater"
   else alt2 <- "less"
@@ -189,7 +200,6 @@ combined_forder <- function(curve_sets, ...) {
 #' will be the first component (named 'obs') in the returned vector.
 #'
 #' @param curve_sets A \code{curve_set} object or a list of \code{curve_set} objects.
-#' @inheritParams crop_curves
 #' @param measure The measure to use to order the functions from the most extreme to the least extreme
 #' one. Must be one of the following: 'rank', 'erl', 'cont', 'area', 'max', 'int', 'int2'. Default is 'erl'.
 #' @param scaling The name of the scaling to use if measure is 'max', 'int' or 'int2'.
@@ -246,27 +256,20 @@ combined_forder <- function(curve_sets, ...) {
 #' }
 forder <- function(curve_sets, measure = 'erl', scaling = 'qdir',
                    alternative=c("two.sided", "less", "greater"),
-                   use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7,
-                   r_min = NULL, r_max = NULL) {
+                   use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7) {
   if(class(curve_sets)[1] == "list") {
-    curve_sets <- check_curve_set_dimensions(curve_sets)
-    res <- combined_forder(curve_sets, r_min = r_min, r_max = r_max,
+    res <- combined_forder(curve_sets,
                            measure = measure, scaling = scaling,
                            alternative = alternative,
                            use_theo = use_theo,
                            probs = probs, quantile.type = quantile.type)
-    distance <- res$distance
-    names(distance) <- rownames(data_and_sim_curves(curve_sets[[1]]))
   }
   else {
-    curve_sets <- convert_envelope(curve_sets)
-    res <- individual_forder(curve_sets, r_min = r_min, r_max = r_max,
+    res <- individual_forder(curve_sets,
                              measure = measure, scaling = scaling,
                              alternative = alternative,
                              use_theo = use_theo,
                              probs = probs, quantile.type = quantile.type)
-    distance <- res$distance
-    names(distance) <- rownames(data_and_sim_curves(curve_sets))
   }
-  distance
+  res$distance
 }

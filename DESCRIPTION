@@ -1,6 +1,6 @@
 Package: GET
-Version: 0.1-5
-Date: 2020-1-28
+Version: 0.1-6
+Date: 2020-2-17
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -27,7 +27,7 @@ Description: Implementation of global envelopes for a set of general d-dimension
 License: GPL-3
 RoxygenNote: 7.0.2.9000
 NeedsCompilation: no
-Packaged: 2020-02-11 06:51:35 UTC; 03080687
+Packaged: 2020-03-05 23:15:18 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Pavel Grabarnik [ctb],
@@ -36,4 +36,4 @@ Author: Mari Myllymäki [aut, cre],
   Michael Rost [ctb],
   Henri Seijo [ctb]
 Repository: CRAN
-Date/Publication: 2020-02-11 07:30:05 UTC
+Date/Publication: 2020-03-06 05:30:09 UTC

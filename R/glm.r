@@ -1,14 +1,19 @@
+# Check that formula.reduced is nested within formula.full and includes something extra.
+check_isnested <- function(formula.full, formula.reduced) {
+  # Check that the reduced model is nested within the full model
+  if(!all(labels(terms(formula.reduced)) %in% labels(terms(formula.full)))) stop("The reduced model includes some extra variables, not in the full model.\n")
+  if(attr(terms(formula.full), "intercept") < attr(terms(formula.reduced), "intercept")) stop("The reduced model includes intercept, but the full model does not.\n")
+  # Check that the full model includes something in addition to the reduced model
+  if(all(labels(terms(formula.full)) %in% labels(terms(formula.reduced)))) stop("The full model should not be equal to the reduced model.\n")
+}
+
 # Preliminary checks for the graph.flm and frank.flm
 #' @importFrom stats terms
 flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors = NULL, fast = TRUE) {
   # Preliminary checks
   vars <- all.vars(formula.full)
   vars.reduced <- all.vars(formula.reduced)
-  # Check that the reduced model is nested within the full model
-  if(!all(labels(terms(formula.reduced)) %in% labels(terms(formula.full)))) stop("The reduced model includes some extra variables, not in the full model.\n")
-  if(attr(terms(formula.full), "intercept") < attr(terms(formula.reduced), "intercept")) stop("The reduced model includes intercept, but the full model does not.\n")
-  # Check that the full model includes something in addition to the reduced model
-  if(all(labels(terms(formula.full)) %in% labels(terms(formula.reduced)))) stop("The full model should not be equal to the reduced model.\n")
+  check_isnested(formula.full, formula.reduced)
   if(nsim < 1) stop("Not a reasonable value of nsim.\n")
   if(vars[1] != "Y") stop("The formula should be off the form Y ~ .... where Y is the response.\n")
   if(class(curve_sets)[1] != "list") {
@@ -21,11 +26,11 @@ flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors 
     einfo <- curve_sets[['Y']]$names
   } else einfo <- NULL
   curve_sets <- lapply(curve_sets, convert_fdata)
-  if(!all(lapply(curve_sets[['obs']], is.matrix))) stop("The curve_set must include data functions (sim_m ignored).\n")
+  if(any(sapply(curve_sets, function(x) curve_set_is1obs(x)))) stop("All (data) functions of the curve_set must be equal.\n")
   curve_sets <- check_curve_set_dimensions(curve_sets)
   # Put Y and factors into data.l
   data.l <- list()
-  data.l[['Y']] <- t(curve_sets[['Y']][['obs']]) # -> each row corresponds to a data function
+  data.l[['Y']] <- data_and_sim_curves(curve_sets[['Y']]) # -> each row corresponds to a data function
   # The argument values
   r <- curve_sets[['Y']][['r']]
   Nfunc <- nrow(data.l[['Y']]) # Number of functions
@@ -33,7 +38,7 @@ flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors 
   vars.csets <- vars[vars %in% names(curve_sets)]
   factors_in_curvesets <- !fast
   if(length(curve_sets) > 1 & length(vars.csets) > 1) { # Factors provided in the curve_sets
-    for(i in 2:length(vars.csets)) data.l[[vars.csets[i]]] <- t(curve_sets[[vars.csets[i]]][['obs']])
+    for(i in 2:length(vars.csets)) data.l[[vars.csets[i]]] <- data_and_sim_curves(curve_sets[[vars.csets[i]]])
     factors_in_curvesets <- TRUE
   }
   vars.factors <- vars[vars %in% names(factors)]
@@ -276,7 +281,7 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' which can be printed and plotted directly.
 #' @export
 #' @references
-#' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. arXiv:1902.04926 [stat.ME]
+#' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. Methodology and Computing in Applied Probability. doi: 10.1007/s11009-019-09756-y
 #'
 #' Freedman, D., & Lane, D. (1983) A nonstochastic interpretation of reported significance levels. Journal of Business & Economic Statistics, 1(4), 292-298. doi:10.2307/1391660
 #' @importFrom stats lm
@@ -577,7 +582,7 @@ frank.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
 #' which can be printed and plotted directly.
 #' @export
 #' @references
-#' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. arXiv:1902.04926 [stat.ME]
+#' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. Methodology and Computing in Applied Probability. doi: 10.1007/s11009-019-09756-y
 #'
 #' Freedman, D., & Lane, D. (1983) A nonstochastic interpretation of reported significance levels. Journal of Business & Economic Statistics, 1(4), 292-298. doi:10.2307/1391660
 #' @examples

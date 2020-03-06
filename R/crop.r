@@ -1,8 +1,10 @@
-#' Crop the curves to a certain interval.
+#' Crop the curves to a certain interval
 #'
-#' Crop the curves to a certain interval in preparation for a deviation
-#' test.
+#' Crop the curves to a certain interval
 #'
+#'
+#' The curves can be cropped to a certain interval defined by the arguments r_min and r_max.
+#' The interval should generally be chosen carefully for classical deviation tests.
 #' @param curve_set A curve_set (see \code{\link{create_curve_set}}) or
 #' an \code{\link[spatstat]{envelope}} object. If an envelope object is given,
 #' it must contain the summary functions from the simulated patterns which can be
@@ -13,6 +15,7 @@
 #'   the cropped radius vector.
 #' @export
 crop_curves <- function(curve_set, r_min = NULL, r_max = NULL) {
+  if(!is.null(r_min) | !is.null(r_max)) if(!is.vector(curve_set$r)) stop("curve_set$r is not a vector: r_min and r_max cannot be used.\n")
   curve_set <- convert_envelope(curve_set, allow_Inf_values = TRUE)
 
   n_r_min <- length(r_min)
@@ -50,23 +53,10 @@ crop_curves <- function(curve_set, r_min = NULL, r_max = NULL) {
     stop('r_min and r_max cropped everything away.')
   }
 
-  r_cut <- r[cut_idx]
-  if(is.vector(curve_set[['obs']])) obs_cut <- curve_set[['obs']][cut_idx]
-  else obs_cut <- curve_set[['obs']][cut_idx, , drop = FALSE]
-  sim_m_cut <- curve_set[['sim_m']][cut_idx, , drop = FALSE]
+  curve_set[['r']] <- r[cut_idx]
+  curve_set[['funcs']] <- curve_set[['funcs']][cut_idx, , drop = FALSE]
   theo <- curve_set[['theo']]
-  n_theo <- length(theo)
-  if(n_theo > 0L) {
-    theo_cut <- theo[cut_idx]
-  }
-
-  res <- list(r=r_cut, obs=obs_cut)
-  if(!is.null(sim_m_cut)) res[['sim_m']] <- sim_m_cut
-  if(n_theo > 0L) {
-    res[['theo']] <- theo_cut
-  }
-  if(with(curve_set, exists('is_residual'))) res[['is_residual']] <- curve_set[['is_residual']]
-
-  res <- create_curve_set(res, allow_Inf_values = FALSE)
-  res
+  if(!is.null(theo)) curve_set[['theo']] <- theo[cut_idx]
+  check_curve_set_content(curve_set, allow_Inf_values = FALSE)
+  curve_set
 }

@@ -28,7 +28,7 @@ pick_attributes <- function(curve_set, alternative, type) {
     else {
         fname <- "T"
         argu <- "r"
-        if(is.vector(curve_set[['obs']])) {
+        if(curve_set_is1obs(curve_set)) {
           labl <- c("r", "T[obs](r)", "T[0](r)", "T[lo](r)", "T[hi](r)")
           desc <- c("distance argument r",
                     "observed value of %s for data pattern",
@@ -44,27 +44,7 @@ pick_attributes <- function(curve_set, alternative, type) {
         ylab <- "T(r)"
         yexp <- quote(T(r))
         # tack on envelope information
-        einfo <- list(global = TRUE,
-                      ginterval = range(curve_set[['r']]),
-                      alternative = alternative,
-                      scale = NULL,
-                      clamp = NULL,
-                      csr = FALSE,
-                      use.theory = with(curve_set, exists("theo")),
-                      csr.theo = FALSE,
-                      pois = FALSE,
-                      simtype = "other",
-                      constraints = NULL,
-                      nrank = NULL,
-                      VARIANCE = (type == "st"),
-                      nSD = NULL,
-                      valname = NULL,
-                      dual = NULL,
-                      nsim = NULL,
-                      nsim2 = NULL,
-                      Yname = "curve_set[['obs']]",
-                      do.pwrong=FALSE,
-                      use.weights=FALSE)
+        einfo <- list(alternative = alternative)
     }
     list(argu=argu, fname=fname, labl=labl, desc=desc, ylab=ylab, yexp=yexp,
          xlab=argu, xexp=quote(r), einfo=einfo)
@@ -85,7 +65,7 @@ retick_xaxis <- function(x) {
 
 # Define breaking r values and labels on x-axis for plotting several
 # global envelopes or curve sets jointly.
-# @param x A global_envelope object of a list of global_envelope objects.
+# @param x A global_envelope object or a list of global_envelope objects.
 # Also curve_set objects allowed with a restricted use.
 # @param nticks Number of ticks per a sub test.
 combined_global_envelope_rhelper <- function(x, nticks = 5) {
@@ -157,7 +137,7 @@ combined_global_envelope_rhelper <- function(x, nticks = 5) {
 
 # An internal GET function for setting the default main for a global envelope plot.
 # @param x An 'global_envelope' object.
-env_main_default <- function(x, digits=3, alternative=attr(x, "einfo")$alternative) {
+env_main_default <- function(x, digits=3, alternative=get_alternative(x)) {
   if(!is.null(attr(x, "p_interval"))) {
     if(alternative == "two.sided")
       main <- paste(attr(x, "method"), ": p-interval = (",
@@ -197,7 +177,7 @@ env_ylim_default <- function(x, use_ggplot2) {
   if(!use_ggplot2)
     ylim <- lapply(x, {
       function(y) {
-        switch(attr(y, "einfo")$alternative,
+        switch(get_alternative(y),
                two.sided = {
                  ylim <- c(min(y[['obs']],y[['lo']],y[['hi']],y[['central']]),
                            max(y[['obs']],y[['lo']],y[['hi']],y[['central']]))
@@ -245,11 +225,11 @@ env_dotplot <- function(x, main, ylim, xlab, ylab, color_outside = TRUE,
     if(nr > 10) warning("Dotplot style meant for low dimensional test vectors.\n")
     if(!add) graphics::plot(1:nr, x[['central']], main=main, ylim=ylim, xlab=xlab, ylab=ylab, cex=0.5, pch=16, xaxt="n", ...)
     else graphics::points(1:nr, x[['central']], main=main, ylim=ylim, xlab=xlab, ylab=ylab, cex=0.5, pch=16, xaxt="n", ...)
-    if(attr(x, "einfo")$alternative!="greater")
+    if(get_alternative(x)!="greater")
         graphics::arrows(1:nr, x[['lo']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=arrows.col)
     else
         graphics::arrows(1:nr, x[['lo']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=grey(0.8))
-    if(attr(x, "einfo")$alternative!="less")
+    if(get_alternative(x)!="less")
         graphics::arrows(1:nr, x[['hi']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=arrows.col)
     else
         graphics::arrows(1:nr, x[['hi']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=grey(0.8))
@@ -262,9 +242,10 @@ env_dotplot <- function(x, main, ylim, xlab, ylab, color_outside = TRUE,
       }
     }
     if(!is.null(curve_sets)) {
-      for(i in 1:ncol(curve_sets$obs)) {
-        if(any(curve_sets$obs[,i] < x[['lo']] | curve_sets$obs[,i] > x[['hi']])) {
-          graphics::points(1:nr, curve_sets$obs[,i], pch='x', col=grey(0.7), type="b")
+      funcs <- curve_set_funcs(curve_sets)
+      for(i in 1:ncol(funcs)) {
+        if(any(funcs[,i] < x[['lo']] | funcs[,i] > x[['hi']])) {
+          graphics::points(1:nr, funcs[,i], pch='x', col=grey(0.7), type="b")
         }
       }
     }
@@ -297,7 +278,7 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
     # a) if x is a list of global_envelope objects
     # b) if x[['r']] contains repeated values (when length(x) == 1)
     rdata <- combined_global_envelope_rhelper(x, nticks=nticks)
-    alt <- attr(x[[1]], "einfo")$alternative
+    alt <- get_alternative(x[[1]])
     x <- rdata$x_vec
     # Plot
     if(Nfunc == 1 & is.null(rdata$r_values_newstart_id)) {
@@ -324,9 +305,10 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
         }
         # curves/outliers
         if(!is.null(curve_sets)) {
-          for(i in 1:ncol(curve_sets$obs)) {
-            if(any(curve_sets$obs[,i] < x[['lo']] | curve_sets$obs[,i] > x[['hi']]))
-              lines(x[['r']], curve_sets$obs[,i], col=grey(0.7))
+          funcs <- curve_set_funcs(curve_sets)
+          for(i in 1:ncol(funcs)) {
+            if(any(funcs[,i] < x[['lo']] | funcs[,i] > x[['hi']]))
+              lines(x[['r']], funcs[,i], col=grey(0.7))
           }
         }
         if(rdata$retick_xaxis) {
@@ -388,10 +370,11 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
             }
             # curves/outliers
             if(!is.null(curve_sets)) {
-              for(j in 1:ncol(curve_sets$obs)) {
-                if(any(curve_sets$obs[,j] < x[['lo']] | curve_sets$obs[,j] > x[['hi']]))
+              funcs <- curve_set_funcs(curve_sets)
+              for(j in 1:ncol(funcs)) {
+                if(any(funcs[,j] < x[['lo']] | funcs[,j] > x[['hi']]))
                   lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)],
-                        curve_sets$obs[tmp_indeces[i]:(tmp_indeces[i+1]-1),j], col=grey(0.7))
+                        funcs[tmp_indeces[i]:(tmp_indeces[i+1]-1),j], col=grey(0.7))
               }
             }
         }
@@ -456,7 +439,7 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
     # a) if x is a list of global_envelope objects
     # b) if x[['r']] contains repeated values (when length(x) == 1)
     rdata <- combined_global_envelope_rhelper(x, nticks=nticks)
-    alt <- attr(x[[1]], "einfo")$alternative
+    alt <- get_alternative(x[[1]])
     x <- rdata$x_vec
 
     linetype.values <- c('dashed', 'solid')
@@ -466,9 +449,10 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
     outliers <- NULL
     if(!is.null(curve_sets)) {
       if(inherits(curve_sets, "list")) curve_sets <- combine_curve_sets(curve_sets, equalr=FALSE)
-      for(j in 1:ncol(curve_sets$obs)) {
-        if(any(curve_sets$obs[,j] < x[['lo']] | curve_sets$obs[,j] > x[['hi']])) {
-          outliers <- c(outliers, curve_sets$obs[,j])
+      funcs <- curve_set_funcs(curve_sets)
+      for(j in 1:ncol(funcs)) {
+        if(any(funcs[,j] < x[['lo']] | funcs[,j] > x[['hi']])) {
+          outliers <- c(outliers, funcs[,j])
           counter <- counter + 1
         }
       }
@@ -672,7 +656,7 @@ env2d_basic_plot <- function(x, var = c('obs', 'lo', 'hi', 'lo.sign', 'hi.sign')
          },
          # Lower envelope
          lo = {
-           if(attr(x, "einfo")$alternative != "greater") {
+           if(get_alternative(x) != "greater") {
              lo.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z= x$lo))
              if(!("col" %in% names(extraargs))) {
                if(max(x$lo)>min(x$lo))
@@ -686,7 +670,7 @@ env2d_basic_plot <- function(x, var = c('obs', 'lo', 'hi', 'lo.sign', 'hi.sign')
          },
          # Upper envelope
          hi = {
-           if(attr(x, "einfo")$alternative != "less") {
+           if(get_alternative(x) != "less") {
              hi.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z= x$hi))
              if(!("col" %in% names(extraargs))) {
                if(max(x$hi)>min(x$hi))
@@ -717,7 +701,7 @@ env2d_basic_plot <- function(x, var = c('obs', 'lo', 'hi', 'lo.sign', 'hi.sign')
          },
          hi.sign = {
            # Above
-           if(!is.null(x$obs) & attr(x, "einfo")$alternative != "less") {
+           if(!is.null(x$obs) & get_alternative(x) != "less") {
              obs.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z=x$obs))
              transparent <- grDevices::rgb(0, 0, 0, max = 255, alpha = 0, names = "transparent")
              red <- grDevices::rgb(sign.col[1], sign.col[2], sign.col[3], max = 255, alpha = transparency, names = "red")
@@ -770,17 +754,23 @@ env2d_ggplot2_helper <- function(x, fixedscales, contours = TRUE, main="", inser
     }
   }
 
-  if(all(sapply(x$r, length) == length(x$obs))) {
-    df <- as.data.frame(x$r)
-  } else {
+  # If curve_set$r was created using a data.frame
+  if(!is.null(x[['x']])) df <- x[, c("height", "width", "x", "y")]
+  else if(!is.null(x[['xmin']])) df <- x[, c("xmax", "xmin", "ymax", "ymin")]
+  # The case of image_set
+  else {
+    # If image_set was created using (xmin, xmax, ymin, ymax) for x and y dimensions independently.
     if(!is.null(x$r$xmin)) {
       df <- expand.grid(xmin=x$r$xmin, ymin=x$r$ymin)
       df <- cbind(df, expand.grid(xmax=x$r$xmax, ymax=x$r$ymax))
     } else {
+      # If image_set was created using (x, y) for x and y dimensions indepently
       df <- expand.grid(x=x$r$x, y=x$r$y)
       if(!is.null(x$r$width)) {
+        # If also width and height were given
         df <- cbind(df, expand.grid(width=x$r$width, height=x$r$height))
       } else {
+        # If not assume equal spacing
         df$width <- x$r$x[2] - x$r$x[1]
         df$height <- x$r$y[2] - x$r$y[1]
       }
@@ -795,20 +785,21 @@ env2d_ggplot2_helper <- function(x, fixedscales, contours = TRUE, main="", inser
     df$main <- main
     df
   }
+  alt <- get_alternative(x)
   dfs <- list()
   if(!is.null(x$obs)) {
     dfs <- c(dfs, list(adddf(df, x$obs, "obs", contour=contours)))
   }
-  if(attr(x, "einfo")$alternative != "greater") {
+  if(alt != "greater") {
     dfs <- c(dfs, list(adddf(df, x$lo, "lo", contour=contours)))
   }
-  if(attr(x, "einfo")$alternative != "less") {
+  if(alt != "less") {
     dfs <- c(dfs, list(adddf(df, x$hi, "hi", contour=contours)))
   }
-  if(!is.null(x$obs) && attr(x, "einfo")$alternative != "greater") {
+  if(!is.null(x$obs) && alt != "greater") {
     dfs <- c(dfs, list(adddf(df, x$obs, "lo.sign", signif=x$obs < x$lo)))
   }
-  if(!is.null(x$obs) && attr(x, "einfo")$alternative != "less") {
+  if(!is.null(x$obs) && alt != "less") {
     dfs <- c(dfs, list(adddf(df, x$obs, "hi.sign", signif=x$obs > x$hi)))
   }
   if(fixedscales)

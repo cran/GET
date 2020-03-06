@@ -278,16 +278,16 @@ contrasts.m <- function(x, groups, ...) {
 #' nsim <- 2499 # increase to reduce Monte Carlo error
 #'
 #' # Test for unequal lag 1 covariances
-#' res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec,
-#'                          groups = attr(cgec, "group"),
+#' res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
+#'                          groups = cgec$group,
 #'                          test.equality = "cov", cov.lag = 1)
 #' plot(res.cov1, ncol=3,
 #'      labels = paste("Group ", 1:3, sep=""),
 #'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
 #'      ylab=expression(italic(bar(W)[i](r))))
 #' # Test for equality of variances among groups
-#' res.var <- graph.fanova(nsim = nsim, curve_set = cgec,
-#'                         groups = attr(cgec, "group"),
+#' res.var <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
+#'                         groups = cgec$group,
 #'                         test.equality = "var")
 #' plot(res.var, ncol=3,
 #'      labels = paste("Group ", 1:3, sep=""),
@@ -296,8 +296,8 @@ contrasts.m <- function(x, groups, ...) {
 #'
 #' # Test for equality of means assuming equality of variances
 #' # a) using 'means'
-#' res <- graph.fanova(nsim = nsim, curve_set = cgec,
-#'                     groups = attr(cgec, "group"),
+#' res <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
+#'                     groups = cgec$group,
 #'                     variances = "equal",
 #'                     contrasts = FALSE)
 #' plot(res, ncol=3,
@@ -305,14 +305,14 @@ contrasts.m <- function(x, groups, ...) {
 #'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
 #'      ylab=expression(italic(bar(T)[i](r))))
 #' # b) using 'contrasts'
-#' res2 <- graph.fanova(nsim = nsim, curve_set = cgec,
-#'                     groups = attr(cgec, "group"),
+#' res2 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
+#'                     groups = cgec$group,
 #'                     variances = "equal",
 #'                     contrasts = TRUE)
 #' }
 #' \dontshow{
-#' res2 <- graph.fanova(nsim = 4, curve_set = cgec,
-#'                     groups = attr(cgec, "group"),
+#' res2 <- graph.fanova(nsim = 4, curve_set = cgec$cgec,
+#'                     groups = cgec$group,
 #'                     variances = "equal",
 #'                     contrasts = TRUE,
 #'                     alpha = 0.2)
@@ -351,8 +351,8 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
   if(nsim < 1) stop("Not a reasonable value of nsim.\n")
   if(!(class(curve_set) %in% c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
   curve_set <- convert_fdata(curve_set)
-  if(!is.matrix(curve_set[['obs']])) stop("The curve_set must include data functions (sim_m ignored).\n")
-  x <- t(curve_set[['obs']])
+  if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.\n")
+  x <- data_and_sim_curves(curve_set)
   if(nrow(x) != length(groups)) stop("The length of groups should be equal with the number of functions.\n")
   if(!is.factor(groups)) {
     warning("The argument groups is not a factor. Transforming it to a factor by as.factor.\n")
@@ -442,8 +442,8 @@ frank.fanova <- function(nsim, curve_set, groups, variances="equal",
   if(nsim < 1) stop("Not a reasonable value of nsim.\n")
   if(!(class(curve_set) %in% c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
   curve_set <- convert_fdata(curve_set)
-  if(!is.matrix(curve_set[['obs']])) stop("The curve_set must include data functions (sim_m ignored).\n")
-  x <- t(curve_set[['obs']])
+  if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.\n")
+  x <- data_and_sim_curves(curve_set)
   if(nrow(x) != length(groups)) stop("The length of groups should be equal with the number of functions.\n")
   if(!is.factor(groups)) {
     warning("The argument groups is not a factor. Transforming it to a factor by as.factor.\n")

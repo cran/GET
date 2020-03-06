@@ -105,12 +105,13 @@
 #'   \item Global rank envelope based on F-values: \code{\link{frank.flm}}
 #'   \item Image (2d function) counterparts: \code{\link{graph.flm2d}}, \code{\link{frank.flm2d}}
 #'  }
-#' \item Wrapper functions to perform global envelopes for specific purposes:
+#' \item Functions for performing global envelopes for specific purposes:
 #'  \itemize{
 #'   \item Central regions for images (2d functions): \code{\link{central_region2d}}
 #'   \item Global envelope tests for images (2d functions): \code{\link{global_envelope_test2d}}
 #'   \item Graphical n sample test of correspondence of distribution functions: \code{\link{GET.necdf}}
 #'   \item Variogram and residual variogram with global envelopes: \code{\link{GET.variogram}}
+#'   \item Testing global and local dependence of point patterns on covariates: \code{\link{GET.spatialF}}
 #'  }
 #'
 #' \item Deviation tests (for simple hypothesis): \code{\link{deviation_test}} (no gpaphical
@@ -209,10 +210,6 @@
 #' Here T_0(r) is the expectation of T(r) under the null hypothesis.
 #' }
 #'
-#' The function \code{\link{envelope_to_curve_set}} can be used to create a curve_set object
-#' from the object returned by \code{\link[spatstat]{envelope}}. An \code{envelope} object can also
-#' directly be given to the functions mentioned above in this section.
-#'
 #' @section Example data (see references on the help pages of each data set):
 #' \itemize{
 #'  \item \code{\link{abide_9002_23}}: see help page
@@ -261,7 +258,7 @@
 #'
 #' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
-#' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. arXiv:1902.04926 [stat.ME]
+#' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. Methodology and Computing in Applied Probability. doi: 10.1007/s11009-019-09756-y
 #'
 #' Mrkvička, T., Soubeyrand, S., Myllymäki, M., Grabarnik, P., and Hahn, U. (2016) Monte Carlo testing in spatial statistics, with applications to spatial residuals. Spatial Statistics 18, Part A: 40-53. doi: http://dx.doi.org/10.1016/j.spasta.2016.04.005
 #'
@@ -270,6 +267,8 @@
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017) Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 79: 381–404. doi: 10.1111/rssb.12172
 #'
 #' Myllymäki, M. and Mrkvička, T. (2019). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
+#'
+#' Myllymäki, M., Kuronen, M. and Mrkvička, T. (2020). Testing global and local dependence of point patterns on covariates in parametric models. Spatial Statistics. doi: 10.1016/j.spasta.2020.100436
 #' @name GET-package
 #' @docType package
 #' @aliases GET-package
