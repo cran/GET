@@ -2,48 +2,43 @@
 % Please edit documentation in R/envelopes2d.r
 \name{plot.global_envelope2d}
 \alias{plot.global_envelope2d}
-\title{Plot method for the class 'global_envelope2d'}
+\title{Plotting function for 2d global envelopes}
 \usage{
 \method{plot}{global_envelope2d}(
   x,
-  plot_style = c("ggplot2", "basic"),
   fixedscales = TRUE,
+  main,
+  what = c("obs", "hi", "lo", "hi.sign", "lo.sign"),
   sign.col = "red",
   transparency = 85/255,
-  contours = FALSE,
-  main = NULL,
   digits = 3,
   ...
 )
 }
 \arguments{
-\item{x}{an 'global_envelope2d' object}
-
-\item{plot_style}{Either "ggplot2" or "basic". (Similar to the argument in \code{\link{plot.global_envelope}}.)}
+\item{x}{A 'global_envelope' object for two-dimensional functions}
 
 \item{fixedscales}{Logical. TRUE for the same scales for all images.}
+
+\item{main}{The overall main.}
+
+\item{what}{Character vector specifying what information should be plotted for 2d functions.
+A combination of:
+Observed (\code{"obs"}), upper envelope (\code{"hi"}), lower envelope (\code{"lo"}),
+observed with significantly higher values highlighted (\code{"hi.sign"}),
+observed with significantly lower values highlighted (\code{"lo.sign"}).}
 
 \item{sign.col}{The color for the significant regions. Default to "red".}
 
 \item{transparency}{A number between 0 and 1 (default 85/255, 33% transparency).
-Similar to alpha of \code{\link[grDevices]{rgb}}. Used in plotting the significant regions.}
-
-\item{contours}{Logical. Whether to draw contour lines to the observed function and the lower and upper envelope.}
-
-\item{main}{The overall main. Default exists.}
+Similar to alpha of \code{\link[grDevices]{rgb}}. Used in plotting the significant regions for 2d
+functions.}
 
 \item{digits}{The number of digits used for printing the p-value or p-interval in the main,
 if using the default main.}
 
-\item{...}{Additional parameters to be passed to \code{\link[spatstat]{plot.im}}.}
+\item{...}{Ignored.}
 }
 \description{
-Plot method for the class 'global_envelope2d'
-}
-\details{
-Additional parameter \code{col} can be passed in \code{...} to \code{\link[spatstat]{plot.im}}.
-If \code{col} not given, a \code{\link[spatstat]{colourmap}} of 255 grey values between the
-minimum and maximum of the function values is used for each image separately.
-If \code{col} is provided, the same specification will be used for each produced plot,
-which may make it easier to compare the figures with each other.
+Plotting function for 2d global envelopes
 }

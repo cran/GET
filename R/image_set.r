@@ -19,14 +19,18 @@ check_image_set_dimensions <- function(image_set) {
       allequal <- function(x) all(abs(x - x[1]) < 1e-10*x[1])
       if(!allequal(w) || !allequal(h)) stop("Unequal gridsize detected, please specify width and height of cells.")
       if(length(r$x)!=obs_d[1] | length(r$y)!=obs_d[2]) stop("Unsuitable image_set[[\'r\']].\n")
-    } else if(identical(sort(names(r)), c("height", "width", "x", "y"))
-              || identical(sort(names(r)), c("xmax", "xmin", "ymax", "ymin"))) {
+    } else if(identical(sort(names(r)), c("height", "width", "x", "y"))) {
       if(length(r$width) == 1) image_set$r$width <- rep(r$width, times=length(r$x))
       else if(length(r$width)!=length(r$x)) stop("Unsuitable image_set[[\'r\']]: width should have the same length as x.\n")
       if(length(r$height) == 1) image_set$r$height <- rep(r$height, times=length(r$y))
       else if(length(r$height)!=length(r$x)) stop("Unsuitable image_set[[\'r\']]: height should have the same length as y.\n")
       if(length(r$x)!=obs_d[1]) stop("Unsuitable image_set[[\'r\']]: the length of x does not match the dimension of obs matrix.\n")
       if(length(r$y)!=obs_d[2]) stop("Unsuitable image_set[[\'r\']]: the length of y does not match the dimension of obs matrix.\n")
+    } else if(identical(sort(names(r)), c("xmax", "xmin", "ymax", "ymin"))) {
+      if(length(r$xmin)!=obs_d[1]) stop("Unsuitable image_set[[\'r\']]: the length of xmin does not match the dimension of obs matrix.\n")
+      if(length(r$ymin)!=obs_d[2]) stop("Unsuitable image_set[[\'r\']]: the length of ymin does not match the dimension of obs matrix.\n")
+      if(length(r$xmax)!=obs_d[1]) stop("Unsuitable image_set[[\'r\']]: the length of xmax does not match the dimension of obs matrix.\n")
+      if(length(r$ymax)!=obs_d[2]) stop("Unsuitable image_set[[\'r\']]: the length of ymax does not match the dimension of obs matrix.\n")
     } else {
       stop("Unsuitable image_set[[\'r\']].\n")
     }
@@ -45,8 +49,25 @@ check_image_set_dimensions <- function(image_set) {
   image_set
 }
 
+expand_image_set_r <- function(r) {
+  if(identical(sort(names(r)), c("x", "y"))) {
+    xy <- expand.grid(x=r[['x']], y=r[['y']], KEEP.OUT.ATTRS = FALSE)
+    xy$width <- min(diff(r[['x']]))
+    xy$height <- min(diff(r[['y']]))
+    xy
+  } else if(identical(sort(names(r)), c("height", "width", "x", "y"))) {
+    cbind(expand.grid(x=r[['x']], y=r[['y']], KEEP.OUT.ATTRS = FALSE),
+          expand.grid(width=r[['width']], height=r[['height']], KEEP.OUT.ATTRS = FALSE))
+  } else if(identical(sort(names(r)), c("xmax", "xmin", "ymax", "ymin"))) {
+    cbind(expand.grid(xmin=r[['xmin']], ymin=r[['ymin']], KEEP.OUT.ATTRS = FALSE),
+          expand.grid(xmax=r[['xmax']], ymax=r[['ymax']], KEEP.OUT.ATTRS = FALSE))
+  } else {
+    stop("Invalid image_set r")
+  }
+}
+
 # Turn an image set object into a curve_set object vectorizing the matrices.
-# The r-values are taken to be just from 1 to number of values of an observed function.
+# The r-values are expanded to the format expected by create_curve_set.
 # Should be preceeded by a call of check_image_set_dimensions.
 image_set_to_curve_set <- function(image_set, ...) {
   obs_d <- dim(image_set$obs)
@@ -56,7 +77,7 @@ image_set_to_curve_set <- function(image_set, ...) {
   if(length(obs_d) == 3) {
     obs_v <- matrix(nrow=obs_d[1]*obs_d[2], ncol=obs_d[3])
     for(i in 1:obs_d[3]) obs_v[,i] <- as.vector(image_set$obs[,,i])
-    curve_set_v <- create_curve_set(list(r=1:(obs_d[1]*obs_d[2]),
+    curve_set_v <- create_curve_set(list(r=expand_image_set_r(image_set[['r']]),
                                          obs=obs_v))
   }
   else {
@@ -71,7 +92,7 @@ image_set_to_curve_set <- function(image_set, ...) {
     if(!all(obs_d == sim_d[1:2])) stop("Something wrong with the dimensions of obs and sim_m.\n")
     sim_v <- matrix(nrow=sim_d[1]*sim_d[2], ncol=sim_d[3])
     for(i in 1:sim_d[3]) sim_v[,i] <- as.vector(image_set$sim_m[,,i])
-    curve_set_v <- create_curve_set(list(r=1:(obs_d[1]*obs_d[2]),
+    curve_set_v <- create_curve_set(list(r=expand_image_set_r(image_set[['r']]),
                                          obs=as.vector(image_set$obs),
                                          sim_m=sim_v))
     curve_set_v$theo <- theo_v
@@ -81,23 +102,16 @@ image_set_to_curve_set <- function(image_set, ...) {
   curve_set_v
 }
 
-# Check the content validity of a potential image_set object.
-check_image_set_content <- function(image_set) {
-  image_set <- check_image_set_dimensions(image_set)
-  # convert the images to functions and check the values
-  image_set_to_curve_set(image_set)
-  image_set
-}
-
-#' Create an image set out of a list in the right form.
+#' Create a curve set of images
 #'
-#' Create an image set out of a list in the right form containing the values of the 2d functions.
-#' Only 2d functions in a rectangular windows are currently supported; the values are provided
-#' in matrices (arrays).
+#' Create a curve set consisting of a set of images, given a list containing
+#' the values of the 2d functions in the right form.
+#' Only 2d functions in a rectangular windows are supported; the values are provided
+#' in matrices (arrays). For more general 2d functions see \code{\link{create_curve_set}}.
 #'
 #' @param image_set A list containing elements \code{r}, \code{obs}, \code{sim_m} and \code{theo}.
 #'   \code{r}, \code{sim_m} and \code{theo} are optional, \code{obs} needs to be provided always.
-#'   If provided, \code{r} must be a \code{\link{data.frame}} describing the argument values
+#'   If provided, \code{r} must be a \code{list} describing the argument values
 #'   where the images have been observed (or simulated). It must consist of the following two or
 #'   four components:
 #'   a) "x" and "y" giving the equally spaced argument values for the x- and y-coordinates
@@ -118,93 +132,24 @@ check_image_set_content <- function(image_set) {
 #'   (e.g., under the null hypothesis) and its dimensions must either match the dimensions
 #'   of 2d functions in \code{obs} or it must be a constant.
 #' @param ... Do not use. (For internal use only.)
-#' @return The given list adorned with the proper class name.
+#' @return The given list as a \code{curve_set}.
 #' @export
+#' @examples
+#' a <- create_image_set(list(obs=array(runif(4*5*6), c(4,5,6))))
+#' plot(a)
+#' plot(a, idx=1:6)
+#'
+#' a <- create_image_set(list(r=list(x=c(10,20,30,40), y=1:5*0.1),
+#'                            obs=array(runif(4*5*6), c(4,5,6))))
+#' plot(a)
+#'
+#' a <- create_image_set(list(r=list(xmin=c(1, 2, 4, 7), xmax=c(2, 4, 7, 11),
+#'                                   ymin=c(1,1.1,2,2.1,3), ymax=c(1.1,2,2.1,3,3.1)),
+#'                            obs=array(runif(4*5*6), c(4,5,6))))
+#' plot(a)
+#' plot(a, idx=1:5)
 create_image_set <- function(image_set, ...) {
   image_set <- check_image_set_dimensions(image_set) # Check image_set dimensions and assign r if it does not exist
-  image_set_to_curve_set(image_set) # convert the images to functions to check the values
-  class(image_set) <- 'image_set'
+  image_set <- image_set_to_curve_set(image_set) # convert the images to functions
   image_set
-}
-
-#' Print method for the class 'image_set'
-#'
-#' @param x an 'image_set' object
-#' @param ... Passed to \code{\link[utils]{str}}.
-#'
-#' @export
-#' @importFrom utils str
-print.image_set <- function(x, ...) {
-  str(x, ...)
-}
-
-#' Plot method for the class 'image_set'
-#'
-#' @inheritParams plot.global_envelope2d
-#' @param x an 'image_set' object
-#' @param idx Indices of the images in the image_set to be plotted.
-#' @param obs Logical. TRUE, then idx is understood as an index to \code{image_set$obs},
-#' otherwise to \code{image_set$sim_m}.
-#' @param main The title. Default exists.
-#' @param col Colours to be passed to \code{\link[spatstat]{plot.im}} if
-#' \code{plot_style = "basic"}. A default exists.
-#' @param max_ncols_of_plots The maximum number of columns for the figures. Default 4.
-#' @param ... Additional parameters to be passed to \code{\link[spatstat]{plot.im}}.
-#'
-#' @importFrom spatstat colourmap
-#' @importFrom grDevices gray
-#' @importFrom spatstat as.im
-#' @importFrom spatstat plot.im
-#' @importFrom graphics par
-#' @importFrom ggplot2 ggplot aes .data geom_raster facet_wrap vars
-#' @export
-plot.image_set <- function(x, idx = 1, obs = TRUE, plot_style = c("ggplot2", "basic"),
-                           main, col, max_ncols_of_plots = 4, ...) {
-  plot_style <- match.arg(plot_style)
-  if(obs) {
-    if(length(dim(x$obs))==2) {
-      idx <- 1
-      obs <- array(x$obs, dim=c(dim(x$obs),1))
-    }
-    else {
-      if(!all(idx %in% 1:dim(x$obs)[3])) stop("Unreasonable indices \'idx\'.\n")
-      obs <- x$obs
-    }
-  }
-  else {
-    if(is.null(x$sim_m) || !all(idx %in% 1:dim(x$sim_m)[3])) stop("Unreasonable indices \'idx\'.\n")
-    obs <- x$sim_m
-  }
-  if(missing(main))
-    main <- paste("Image ", idx, sep="")
-  else if(length(main) == 1) main <- rep(main, times=length(idx))
-
-  switch(plot_style,
-         basic = {
-           n_of_plots <- length(idx)
-           ncols_of_plots <- min(n_of_plots, max_ncols_of_plots)
-           nrows_of_plots <- ceiling(n_of_plots / ncols_of_plots)
-           opar <- par(mfrow=c(nrows_of_plots, ncols_of_plots))
-           on.exit(par(opar))
-           if(missing(col))
-             col <- colourmap(grDevices::gray(0:255/255), range=range(obs[,,idx]))
-           for(i in 1:length(idx)) {
-             obs.im <- as.im(list(x=x$r[[1]], y=x$r[[2]], z=obs[,,idx[i]]))
-             plot.im(obs.im, col=col, main=main[i], ...)
-           }
-         },
-         ggplot2 = {
-           max_ncols_of_plots <- min(max_ncols_of_plots, length(idx))
-           xy <- expand.grid(x=x$r[[1]], y=x$r[[2]])
-           dfs <- lapply(1:length(idx), function(i) {
-             xy$z <- c(obs[,,idx[i]])
-             xy$title <- factor(main[i])
-             xy
-           })
-           df <- do.call(rbind, dfs)
-           ggplot(df, aes(x=.data$x, y=.data$y, fill=.data$z)) +
-             geom_raster() +
-             facet_wrap(vars(.data$title), ncol=max_ncols_of_plots) +
-             labs(x="", y="", fill="")
-         })
 }

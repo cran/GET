@@ -161,7 +161,7 @@ env_main_default <- function(x, digits=3, alternative=get_alternative(x)) {
     else {
       if(inherits(x, c("fboxplot", "combined_fboxplot")))
         main <- paste(attr(x, "method"), " based on ", 100*(1-attr(x, "alpha")), "% central region (", attr(x, "type"), ")", sep="")
-      else if(inherits(x, c("global_envelope", "global_envelope2d")))
+      else if(inherits(x, c("global_envelope")))
          main <- paste(100*(1-attr(x, "alpha")), "% central region (", attr(x, "type"), ")", sep="")
     }
   }
@@ -228,11 +228,11 @@ env_dotplot <- function(x, main, ylim, xlab, ylab, color_outside = TRUE,
     if(get_alternative(x)!="greater")
         graphics::arrows(1:nr, x[['lo']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=arrows.col)
     else
-        graphics::arrows(1:nr, x[['lo']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=grey(0.8))
+        graphics::arrows(1:nr, x[['lo']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col='grey80')
     if(get_alternative(x)!="less")
         graphics::arrows(1:nr, x[['hi']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=arrows.col)
     else
-        graphics::arrows(1:nr, x[['hi']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col=grey(0.8))
+        graphics::arrows(1:nr, x[['hi']], 1:nr, x[['central']], code = 1, angle = 75, length = .1, col='grey80')
     graphics::axis(1, 1:nr, labels=labels)
     if(!is.null(x[['obs']])) {
       graphics::points(1:nr, x[['obs']], pch='x')
@@ -245,12 +245,25 @@ env_dotplot <- function(x, main, ylim, xlab, ylab, color_outside = TRUE,
       funcs <- curve_set_funcs(curve_sets)
       for(i in 1:ncol(funcs)) {
         if(any(funcs[,i] < x[['lo']] | funcs[,i] > x[['hi']])) {
-          graphics::points(1:nr, funcs[,i], pch='x', col=grey(0.7), type="b")
+          graphics::points(1:nr, funcs[,i], pch='x', col='grey70', type="b")
         }
       }
     }
 }
 
+# Turn an envelope into a 'dotplot' with ggplot2.
+#' @importFrom ggplot2 arrow ggplot geom_segment aes .data geom_point scale_color_identity scale_x_discrete
+env_dotplot_ggplot <- function(x, labels=NULL) {
+  if(is.null(labels) && !is.null(x[['r']])) labels <- paste(round(x[['r']], digits=2))
+  df <- as.data.frame(x)
+  arrow <- arrow(angle=75)
+  ggplot(df) + geom_segment(aes(x=.data$r, y=.data$central, xend=.data$r, yend=.data$hi), arrow=arrow) +
+    geom_segment(aes(x=factor(.data$r), y=.data$central, xend=.data$r, yend=.data$lo), arrow=arrow) +
+    geom_point(aes(x=factor(.data$r), y=.data$obs, col=ifelse(.data$obs > .data$hi | .data$obs < .data$lo, "red", "black")), shape="x", size=5) +
+    geom_point(aes(x=factor(.data$r), y=.data$central)) +
+    scale_color_identity() +
+    scale_x_discrete(breaks=paste(x[['r']]), labels=labels)
+}
 
 # An internal GET function for making a basic "global envelope plot".
 #
@@ -294,8 +307,8 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
           else lines(x[['r']], x[['central']], lty=3, lwd=2, xaxt="n", ...)
           if(!is.null(curve_sets) && class(curve_sets)[1] == "list") curve_sets <- combine_curve_sets(curve_sets, equalr=FALSE)
         }
-        if(alt != "greater") lines(x[['r']], x[['lo']], lty=2, col=env.col) else lines(x[['r']], x[['lo']], lty=2, col=grey(0.8))
-        if(alt != "less") lines(x[['r']], x[['hi']], lty=2, col=env.col) else lines(x[['r']], x[['hi']], lty=2, col=grey(0.8))
+        if(alt != "greater") lines(x[['r']], x[['lo']], lty=2, col=env.col) else lines(x[['r']], x[['lo']], lty=2, col='grey80')
+        if(alt != "less") lines(x[['r']], x[['hi']], lty=2, col=env.col) else lines(x[['r']], x[['hi']], lty=2, col='grey80')
         if(!is.null(x[['obs']])) {
           lines(x[['r']], x[['obs']], lty=1, type=obs.type)
           if(color_outside) {
@@ -308,7 +321,7 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
           funcs <- curve_set_funcs(curve_sets)
           for(i in 1:ncol(funcs)) {
             if(any(funcs[,i] < x[['lo']] | funcs[,i] > x[['hi']]))
-              lines(x[['r']], funcs[,i], col=grey(0.7))
+              lines(x[['r']], funcs[,i], col='grey70')
           }
         }
         if(rdata$retick_xaxis) {
@@ -356,11 +369,11 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
             if(alt != "greater")
               lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['lo']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=2)
             else
-              lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['lo']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=2, col=grey(0.8))
+              lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['lo']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=2, col='grey80')
             if(alt != "less")
               lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['hi']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=2)
             else
-              lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['hi']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=2, col=grey(0.8))
+              lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['hi']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=2, col='grey80')
             if(!is.null(x[['obs']])) {
               lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], x[['obs']][tmp_indeces[i]:(tmp_indeces[i+1]-1)], lty=1, type=obs.type)
               if(color_outside) {
@@ -374,7 +387,7 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
               for(j in 1:ncol(funcs)) {
                 if(any(funcs[,j] < x[['lo']] | funcs[,j] > x[['hi']]))
                   lines(x[['r']][tmp_indeces[i]:(tmp_indeces[i+1]-1)],
-                        funcs[tmp_indeces[i]:(tmp_indeces[i+1]-1),j], col=grey(0.7))
+                        funcs[tmp_indeces[i]:(tmp_indeces[i+1]-1),j], col='grey70')
               }
             }
         }
@@ -417,7 +430,7 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
 env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
                        max_ncols_of_plots = 2,
                        labels = NULL, nticks = 5, curve_sets = NULL, x2 = NULL,
-                       legend = TRUE, color_outside=TRUE) {
+                       legend = TRUE, color_outside=TRUE, sign.col="red") {
     if(!inherits(x, "list")) x <- list(x)
     Nfunc <- length(x)
     if(!is.null(x2)) {
@@ -616,212 +629,9 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
       if(color_outside) {
         df.outside <- df[df$type == "Data function",]
         df.outside <- df.outside[df.outside$curves < df.outside$lower | df.outside$curves > df.outside$upper,]
-        p <- p + geom_point(data=df.outside, ggplot2::aes_(x = ~r, y = ~curves), color="red", size=1)
+        p <- p + geom_point(data=df.outside, ggplot2::aes_(x = ~r, y = ~curves), color=sign.col, size=1)
       }
     }
     # Return
     p
-}
-
-# A helper function for plotting 2d images
-# See plot.global_envelope2d for description of parameters.
-#' @importFrom spatstat as.im
-#' @importFrom spatstat colourmap
-#' @importFrom grDevices gray
-#' @importFrom spatstat plot.im
-#' @importFrom spatstat contour.im
-env2d_basic_plot <- function(x, var = c('obs', 'lo', 'hi', 'lo.sign', 'hi.sign'),
-                               sign.col = c(255, 0, 0), transparency = 85, main, contours = TRUE, ...) {
-  var <- match.arg(var)
-  extraargs <- list(...)
-  if(length(sign.col)!=3) stop("Unreasonable length of sign.col.\n")
-  if(missing(main))
-    switch(var,
-           obs = { main <- "Observed" },
-           lo = { main <- "Lower envelope" },
-           hi = { main <- "Upper envelope" },
-           lo.sign = { main <- "Significance: below (red)" },
-           hi.sign = { main <- "Significance: above (red)" })
-  switch(var,
-         obs = {
-           if(!is.null(x$obs)) {
-             obs.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z=x$obs))
-             if(!("col" %in% names(extraargs))) {
-               col <- spatstat::colourmap(grDevices::gray(0:255/255), range=range(x$obs))
-               spatstat::plot.im(obs.im, col=col, main=main, ...)
-             }
-             else spatstat::plot.im(obs.im, main=main, ...)
-             if(contours) spatstat::contour.im(obs.im, add=TRUE)
-           }
-         },
-         # Lower envelope
-         lo = {
-           if(get_alternative(x) != "greater") {
-             lo.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z= x$lo))
-             if(!("col" %in% names(extraargs))) {
-               if(max(x$lo)>min(x$lo))
-                 col <- spatstat::colourmap(grDevices::gray(0:255/255), range=range(x$lo))
-               else col <- grDevices::gray(0)
-               spatstat::plot.im(lo.im, col=col, main=main, ...)
-             }
-             else spatstat::plot.im(lo.im, main=main, ...)
-             if(contours) if(!is.character(col)) spatstat::contour.im(lo.im, add=TRUE)
-           }
-         },
-         # Upper envelope
-         hi = {
-           if(get_alternative(x) != "less") {
-             hi.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z= x$hi))
-             if(!("col" %in% names(extraargs))) {
-               if(max(x$hi)>min(x$hi))
-                 col <- spatstat::colourmap(grDevices::gray(0:255/255), range=range(x$hi))
-               else col <- grDevices::gray(1)
-               spatstat::plot.im(hi.im, col=col, main=main, ...)
-             }
-             else spatstat::plot.im(hi.im, main=main, ...)
-             if(contours) if(!is.character(col)) spatstat::contour.im(hi.im, add=TRUE)
-           }
-         },
-         # Significance
-         lo.sign = {
-           # Below
-           if(!is.null(x$obs) & attr(x, "einfo")$alternative != "greater") {
-             obs.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z=x$obs))
-             transparent <- grDevices::rgb(0, 0, 0, max = 255, alpha = 0, names = "transparent")
-             red <- grDevices::rgb(sign.col[1], sign.col[2], sign.col[3], max = 255, alpha = transparency, names = "red")
-             if(!("col" %in% names(extraargs))) {
-               col <- spatstat::colourmap(grDevices::gray(0:255/255), range=range(x$obs))
-               spatstat::plot.im(obs.im, col=col, main=main, ...)
-             }
-             else spatstat::plot.im(obs.im, main=main, ...)
-             if(sum(x$obs < x$lo) > 0)
-               spatstat::plot.im(spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z=x$obs < x$lo)),
-                                 col=c(transparent, red), add=TRUE)
-           }
-         },
-         hi.sign = {
-           # Above
-           if(!is.null(x$obs) & get_alternative(x) != "less") {
-             obs.im <- spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z=x$obs))
-             transparent <- grDevices::rgb(0, 0, 0, max = 255, alpha = 0, names = "transparent")
-             red <- grDevices::rgb(sign.col[1], sign.col[2], sign.col[3], max = 255, alpha = transparency, names = "red")
-             if(!("col" %in% names(extraargs))) {
-               col <- spatstat::colourmap(grDevices::gray(0:255/255), range=range(x$obs))
-               spatstat::plot.im(obs.im, col=col, main=main, ...)
-             }
-             else spatstat::plot.im(obs.im, main=main, ...)
-             if(sum(x$obs > x$hi) > 0)
-               spatstat::plot.im(spatstat::as.im(list(x=x$r[[1]], y=x$r[[2]], z=x$obs > x$hi)),
-                                 col=c(transparent, red), add=TRUE)
-           }
-         })
-}
-
-# 2d plots with ggplot2
-#----------------------
-globalVariables(c("main", "label"))
-
-# A helper function for env2d_ggplot2
-#' @importFrom ggplot2 ggplot geom_tile geom_rect aes geom_contour coord_fixed .data labs
-env2d_ggplot2_helper_1 <- function(df, sign.col, transparency, contours = TRUE) {
-  if(!is.null(df$xmin)) {
-    aesxy <- aes(xmin=.data$xmin, ymin=.data$ymin, xmax=.data$xmax, ymax=.data$ymax)
-    geom <- geom_rect
-  } else {
-    aesxy <- aes(x=.data$x, y=.data$y, width=.data$width, height=.data$height)
-    geom <- geom_tile
-  }
-  g <- ggplot(df, aesxy)
-  g <- g + geom(aes(fill=.data$z))
-  g <- g + geom(data=df[df$signif,], aesxy, fill=sign.col, alpha=transparency)
-  if(contours && !is.null(df$x)) g <- g + geom_contour(data=df[df$contour,], aes(x=.data$x, y=.data$y, z=.data$z))
-  g <- g + coord_fixed(ratio=1)
-  g <- g + labs(x="", y="", fill="")
-  g
-}
-
-#' @importFrom gridExtra grid.arrange
-#' @importFrom ggplot2 facet_wrap ggtitle theme element_blank vars
-env2d_ggplot2_helper <- function(x, fixedscales, contours = TRUE, main="", insertmain=TRUE) {
-  namelist <- list(obs = "Observed",
-                   lo = "Lower envelope" ,
-                   hi = "Upper envelope" ,
-                   lo.sign = "Sign.: below" ,
-                   hi.sign = "Sign.: above" )
-  if(!missing(main) && !is.null(main) && insertmain) {
-    for (i in seq_along(namelist)) {
-      namelist[[i]] <- paste(main, ": ", namelist[[i]])
-    }
-  }
-
-  # If curve_set$r was created using a data.frame
-  if(!is.null(x[['x']])) df <- x[, c("height", "width", "x", "y")]
-  else if(!is.null(x[['xmin']])) df <- x[, c("xmax", "xmin", "ymax", "ymin")]
-  # The case of image_set
-  else {
-    # If image_set was created using (xmin, xmax, ymin, ymax) for x and y dimensions independently.
-    if(!is.null(x$r$xmin)) {
-      df <- expand.grid(xmin=x$r$xmin, ymin=x$r$ymin)
-      df <- cbind(df, expand.grid(xmax=x$r$xmax, ymax=x$r$ymax))
-    } else {
-      # If image_set was created using (x, y) for x and y dimensions indepently
-      df <- expand.grid(x=x$r$x, y=x$r$y)
-      if(!is.null(x$r$width)) {
-        # If also width and height were given
-        df <- cbind(df, expand.grid(width=x$r$width, height=x$r$height))
-      } else {
-        # If not assume equal spacing
-        df$width <- x$r$x[2] - x$r$x[1]
-        df$height <- x$r$y[2] - x$r$y[1]
-      }
-    }
-  }
-  adddf <- function(df, z, name, label=namelist[[name]], contour=FALSE, signif=FALSE) {
-    df$z <- c(z)
-    df$name <- name
-    df$label <- factor(label)
-    df$contour <- contour
-    df$signif <- c(signif)
-    df$main <- main
-    df
-  }
-  alt <- get_alternative(x)
-  dfs <- list()
-  if(!is.null(x$obs)) {
-    dfs <- c(dfs, list(adddf(df, x$obs, "obs", contour=contours)))
-  }
-  if(alt != "greater") {
-    dfs <- c(dfs, list(adddf(df, x$lo, "lo", contour=contours)))
-  }
-  if(alt != "less") {
-    dfs <- c(dfs, list(adddf(df, x$hi, "hi", contour=contours)))
-  }
-  if(!is.null(x$obs) && alt != "greater") {
-    dfs <- c(dfs, list(adddf(df, x$obs, "lo.sign", signif=x$obs < x$lo)))
-  }
-  if(!is.null(x$obs) && alt != "less") {
-    dfs <- c(dfs, list(adddf(df, x$obs, "hi.sign", signif=x$obs > x$hi)))
-  }
-  if(fixedscales)
-    do.call(rbind, dfs)
-  else
-    dfs
-}
-
-# @param sign.col The color for the significant regions.
-# @param transparency A number between 0 and 1.
-# Similar to alpha of \code{\link[grDevices]{rgb}}. Used in plotting the significant regions.
-#' @importFrom ggplot2 theme element_blank facet_wrap vars
-env2d_ggplot2_helper_many_single_plots <- function(dfs, sign.col, transparency, contours = TRUE) {
-  remove_axes_theme <- theme(axis.title.x=element_blank(),
-                             axis.text.x=element_blank(),
-                             axis.ticks.x=element_blank(),
-                             axis.title.y=element_blank(),
-                             axis.text.y=element_blank(),
-                             axis.ticks.y=element_blank())
-  lapply(dfs, function(df) {
-    g <- env2d_ggplot2_helper_1(df, sign.col, transparency, contours)
-    g <- g + facet_wrap(vars(label))
-    g + remove_axes_theme
-  })
 }

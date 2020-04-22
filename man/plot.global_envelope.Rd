@@ -12,8 +12,9 @@
   ylim,
   xlab,
   ylab,
-  color_outside = TRUE,
   env.col = 1,
+  color_outside = TRUE,
+  sign.col = "red",
   base_size = 11,
   labels = NULL,
   add = FALSE,
@@ -25,7 +26,7 @@
 \arguments{
 \item{x}{An 'global_envelope' object}
 
-\item{plot_style}{One of the following "basic", "fv" or "ggplot2".
+\item{plot_style}{One of the following "basic", "fv" or "ggplot2" for 1-dimensional functions.
 The option "basic" (default) offers a very basic global envelope plot.
 The option "fv" utilizes the plot routines of the function value table \code{\link[spatstat]{fv.object}}.
 For "ggplot2", a plot with a coloured envelope ribbon is provided. Requires R library ggplot2.
@@ -33,7 +34,7 @@ The option "fv" is currently only available for tests with one test function, wh
 also tests with several tests functions.}
 
 \item{dotplot}{Logical. If TRUE, then instead of envelopes a dot plot is done.
-Suitable for low dimensional test vectors. Only applicable if \code{plot_style} is "basic".
+Suitable for low dimensional test vectors.
 Default: TRUE if the dimension is less than 10, FALSE otherwise.}
 
 \item{main}{See \code{\link{plot.default}}. A sensible default exists.}
@@ -44,10 +45,12 @@ Default: TRUE if the dimension is less than 10, FALSE otherwise.}
 
 \item{ylab}{See \code{\link{plot.default}}. A sensible default exists.}
 
-\item{color_outside}{Logical. Whether to color the places where the data function goes
-outside the envelope. Currently red color is used. Relevant only for \code{plot_style = "basic"}.}
+\item{env.col}{The color for the envelope lines (or dotplot arrows) for 1d functions. Default 1 (black).}
 
-\item{env.col}{The color for the envelope lines (or dotplot arrows). Default 1 (black).}
+\item{color_outside}{Logical. Whether to color the places where the data function goes
+outside the envelope. Relevant only for 1d functions.}
+
+\item{sign.col}{The color for the significant regions. Default to "red".}
 
 \item{base_size}{Base font size, to be passed to theme style when \code{plot_style = "ggplot2"}.}
 

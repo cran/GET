@@ -2,6 +2,7 @@
 % Please edit documentation in R/graphfanova.r
 \name{graph.fanova}
 \alias{graph.fanova}
+\alias{graph.fanova2d}
 \title{One-way graphical functional ANOVA}
 \usage{
 graph.fanova(
@@ -64,7 +65,7 @@ One-way ANOVA tests for functional data with graphical interpretation
 }
 \details{
 This functions can be used to perform one-way graphical functional ANOVA tests described
-in Mrkvička et al. (2016).
+in Mrkvička et al. (2016). Both 1d and 2d functions are allowed in curve sets.
 
 The tests assume that there are \eqn{J}{J} groups which contain
 \eqn{n_1,\dots,n_J}{n1, ..., nJ} functions
@@ -126,16 +127,11 @@ if(require("fda.usc", quietly=TRUE)) {
   # Graphical functional ANOVA
   cset <- create_curve_set(list(r=0:23,
              obs=t(log(poblenou[['nox']][['data']]))))
-\donttest{
-  res.c <- graph.fanova(nsim = 2999, curve_set = cset,
+\dontshow{nsim <- 19}
+\donttest{nsim <- 2999}
+  res.c <- graph.fanova(nsim = nsim, curve_set = cset,
                         groups = Type, variances = "unequal",
                         contrasts = TRUE)
-}
-\dontshow{
-  res.c <- graph.fanova(nsim = 4, curve_set = cset,
-                        groups = Type, variances = "unequal",
-                        contrasts = TRUE, alpha = 0.2)
-}
   plot(res.c, xlab = "Hour", ylab = "Diff.")
 }
 
@@ -144,8 +140,8 @@ if(require("fda.usc", quietly=TRUE)) {
 data(cgec)
 
 # Number of simulations
-\donttest{
-nsim <- 2499 # increase to reduce Monte Carlo error
+\dontshow{nsim <- 19}
+\donttest{nsim <- 2499 # increase to reduce Monte Carlo error}
 
 # Test for unequal lag 1 covariances
 res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
@@ -176,44 +172,25 @@ plot(res, ncol=3,
      ylab=expression(italic(bar(T)[i](r))))
 # b) using 'contrasts'
 res2 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
-                    groups = cgec$group,
-                    variances = "equal",
-                    contrasts = TRUE)
-}
-\dontshow{
-res2 <- graph.fanova(nsim = 4, curve_set = cgec$cgec,
-                    groups = cgec$group,
-                    variances = "equal",
-                    contrasts = TRUE,
-                    alpha = 0.2)
-}
+                     groups = cgec$group,
+                     variances = "equal",
+                     contrasts = TRUE)
 plot(res2, ncol=3,
      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
      ylab=expression(italic(bar(T)[i](r)-bar(T)[j](r))))
 
-\donttest{
-#-- Rimov water temperatures example
-# This is an example analysis of the water temperature data set
-# in Mrkvicka et al. (arXiv:1612.03608v2).
-data(rimov)
-groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
-nsim <- 999
-
-# Test for equality of variances in the groups
-resV <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = FALSE,
-                     test.equality="var")
-plot(resV)
-# Test for equality of lag 1 covariances in the groups
-resC <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = FALSE,
-                     test.equality="cov", cov.lag=1)
-plot(resC)
-
-# Test the equality of means in the groups (fANOVA), assuming equality of variances
-res <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = FALSE)
+# Image set examples
+data("imageset1")
+res <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
+                    curve_set = imageset1$image_set,
+                    groups = imageset1$Group)
 plot(res)
-res2 <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = TRUE)
-plot(res2)
-}
+# Contrasts
+res.c <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
+                      curve_set = imageset1$image_set,
+                      groups = imageset1$Group,
+                      contrasts = TRUE)
+plot(res.c)
 }
 \references{
 Mrkvička, T., Hahn, U. and Myllymäki, M.
@@ -227,5 +204,5 @@ Statistics and Computing 27 (5): 1239-1255. doi:10.1007/s11222-016-9683-9
 Myllymäki, M and Mrkvička, T. (2019). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 }
 \seealso{
-\code{\link{graph.fanova2d}}, \code{\link{frank.fanova}}
+\code{\link{frank.fanova}}
 }

@@ -2,6 +2,7 @@
 % Please edit documentation in R/glm.R
 \name{graph.flm}
 \alias{graph.flm}
+\alias{graph.flm2d}
 \title{Graphical functional GLM}
 \usage{
 graph.flm(
@@ -84,7 +85,7 @@ The Freedman-Lane algorithm (Freedman and Lane, 1983) is applied to permute the 
 consequently, the test approximately achieves the desired significance level.
 
 The specification of the full and reduced formulas is important. The reduced model should be
-nested within the reduced model. The full model should include in addition to the reduced
+nested within the full model. The full model should include in addition to the reduced
 model the interesting factors whose effects are under investigation.
 The implementation to find the coefficients of the interesting factors is based on dummy.coef and
 the restrictions there apply.
@@ -107,19 +108,10 @@ By setting \code{fast = FALSE}, it is possible to use the slow version for any c
 }
 \examples{
 data(rimov)
-\donttest{
 res <- graph.flm(nsim=19, # Increase the number of simulations for serious analysis!
                  formula.full = Y~Year,
                  formula.reduced = Y~1,
                  curve_sets = list(Y=rimov), factors = data.frame(Year = 1979:2014))
-}
-\dontshow{
-res <- graph.flm(nsim = 3,
-                 formula.full = Y~Year,
-                 formula.reduced = Y~1,
-                 curve_sets = list(Y=rimov), factors = data.frame(Year = 1979:2014),
-                 GET.args = list(alpha=0.25))
-}
 plot(res)
 
 # Test if there is a change in the slope in 1994,
@@ -134,16 +126,49 @@ res <- graph.flm(nsim = 19, # Increase the number of simulations for serious ana
                  contrasts = FALSE)
 plot(res)
 
-\donttest{
+\dontshow{nsim <- 19}
+\donttest{nsim <- 999}
 data(GDPtax)
 factors.df <- data.frame(Group = GDPtax$Group, Tax = GDPtax$Profittax)
-res.tax_within_group <- graph.flm(nsim = 999,
+res.tax_within_group <- graph.flm(nsim = nsim,
                                   formula.full = Y~Group+Tax+Group:Tax,
                                   formula.reduced = Y~Group+Tax,
                                   curve_sets = list(Y=GDPtax$GDP),
                                   factors = factors.df)
 plot(res.tax_within_group)
+
+# Image data examples
+
+data(abide_9002_23)
+iset <- abide_9002_23$curve_set
+\dontshow{
+# Cut the data to reduce time
+iset$r <- iset$r[1:29,]
+iset$funcs <- iset$funcs[1:29, ]
 }
+
+# Figure of an image in the group 1 and group 2
+plot(iset, idx=c(1, 27))
+
+# Testing the discrete factor 'group' with contrasts
+# (Use contrasts = FALSE for 'means')
+res <- graph.flm(nsim = 19, # Increase nsim for serious analysis!
+                 formula.full = Y ~ Group + Sex + Age,
+                 formula.reduced = Y ~ Sex + Age,
+                 curve_sets = list(Y = iset),
+                 factors = abide_9002_23[['factors']],
+                 contrasts = TRUE,
+                 GET.args = list(type = "area"))
+plot(res)
+
+# Testing the continuous factor 'age'
+res.a <- graph.flm(nsim = 19, # Increase nsim for serious analysis!
+                 formula.full = Y ~ Group + Sex + Age,
+                 formula.reduced = Y ~ Group + Sex,
+                 curve_sets = list(Y = iset),
+                 factors = abide_9002_23[['factors']],
+                 GET.args = list(type = "area"))
+plot(res.a)
 }
 \references{
 Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. Methodology and Computing in Applied Probability. doi: 10.1007/s11009-019-09756-y

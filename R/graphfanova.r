@@ -5,9 +5,9 @@
 
 # x: array(ndata x nt), each row is one functional data vector
 
-vmean <- function(x) if (is.matrix(x)) apply(x, 2, mean) else x
+vmean <- function(x) if (is.matrix(x)) colMeans(x) else x
 
-vsum <- function(x) if (is.matrix(x)) apply(x, 2, sum) else x
+vsum <- function(x) if (is.matrix(x)) colSums(x) else x
 
 #' @importFrom stats var
 vvar <- function(x) if (is.matrix(x)) apply(x, 2, stats::var) else 0*x
@@ -151,7 +151,7 @@ contrasts.m <- function(x, groups, ...) {
 #'
 #'
 #' This functions can be used to perform one-way graphical functional ANOVA tests described
-#' in Mrkvička et al. (2016).
+#' in Mrkvička et al. (2016). Both 1d and 2d functions are allowed in curve sets.
 #'
 #' The tests assume that there are \eqn{J}{J} groups which contain
 #' \eqn{n_1,\dots,n_J}{n1, ..., nJ} functions
@@ -217,7 +217,8 @@ contrasts.m <- function(x, groups, ...) {
 #' see \code{test.equality}.
 #' @param ... Additional parameters to be passed to \code{\link{global_envelope_test}}.
 #' @export
-#' @seealso \code{\link{graph.fanova2d}}, \code{\link{frank.fanova}}
+#' @aliases graph.fanova2d
+#' @seealso \code{\link{frank.fanova}}
 #' @references
 #' Mrkvička, T., Hahn, U. and Myllymäki, M.
 #' A one-way ANOVA test for functional data with graphical interpretation.
@@ -256,16 +257,11 @@ contrasts.m <- function(x, groups, ...) {
 #'   # Graphical functional ANOVA
 #'   cset <- create_curve_set(list(r=0:23,
 #'              obs=t(log(poblenou[['nox']][['data']]))))
-#' \donttest{
-#'   res.c <- graph.fanova(nsim = 2999, curve_set = cset,
+#' \dontshow{nsim <- 19}
+#' \donttest{nsim <- 2999}
+#'   res.c <- graph.fanova(nsim = nsim, curve_set = cset,
 #'                         groups = Type, variances = "unequal",
 #'                         contrasts = TRUE)
-#' }
-#' \dontshow{
-#'   res.c <- graph.fanova(nsim = 4, curve_set = cset,
-#'                         groups = Type, variances = "unequal",
-#'                         contrasts = TRUE, alpha = 0.2)
-#' }
 #'   plot(res.c, xlab = "Hour", ylab = "Diff.")
 #' }
 #'
@@ -274,8 +270,8 @@ contrasts.m <- function(x, groups, ...) {
 #' data(cgec)
 #'
 #' # Number of simulations
-#' \donttest{
-#' nsim <- 2499 # increase to reduce Monte Carlo error
+#' \dontshow{nsim <- 19}
+#' \donttest{nsim <- 2499 # increase to reduce Monte Carlo error}
 #'
 #' # Test for unequal lag 1 covariances
 #' res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
@@ -306,50 +302,31 @@ contrasts.m <- function(x, groups, ...) {
 #'      ylab=expression(italic(bar(T)[i](r))))
 #' # b) using 'contrasts'
 #' res2 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
-#'                     groups = cgec$group,
-#'                     variances = "equal",
-#'                     contrasts = TRUE)
-#' }
-#' \dontshow{
-#' res2 <- graph.fanova(nsim = 4, curve_set = cgec$cgec,
-#'                     groups = cgec$group,
-#'                     variances = "equal",
-#'                     contrasts = TRUE,
-#'                     alpha = 0.2)
-#' }
+#'                      groups = cgec$group,
+#'                      variances = "equal",
+#'                      contrasts = TRUE)
 #' plot(res2, ncol=3,
 #'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
 #'      ylab=expression(italic(bar(T)[i](r)-bar(T)[j](r))))
 #'
-#' \donttest{
-#' #-- Rimov water temperatures example
-#' # This is an example analysis of the water temperature data set
-#' # in Mrkvicka et al. (arXiv:1612.03608v2).
-#' data(rimov)
-#' groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
-#' nsim <- 999
-#'
-#' # Test for equality of variances in the groups
-#' resV <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = FALSE,
-#'                      test.equality="var")
-#' plot(resV)
-#' # Test for equality of lag 1 covariances in the groups
-#' resC <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = FALSE,
-#'                      test.equality="cov", cov.lag=1)
-#' plot(resC)
-#'
-#' # Test the equality of means in the groups (fANOVA), assuming equality of variances
-#' res <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = FALSE)
+#' # Image set examples
+#' data("imageset1")
+#' res <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
+#'                     curve_set = imageset1$image_set,
+#'                     groups = imageset1$Group)
 #' plot(res)
-#' res2 <- graph.fanova(nsim=nsim, curve_set=rimov, groups=groups, contrasts = TRUE)
-#' plot(res2)
-#' }
+#' # Contrasts
+#' res.c <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
+#'                       curve_set = imageset1$image_set,
+#'                       groups = imageset1$Group,
+#'                       contrasts = TRUE)
+#' plot(res.c)
 graph.fanova <- function(nsim, curve_set, groups, variances="equal",
                          contrasts = FALSE,
                          n.aver = 1L, mirror = FALSE, savefuns=FALSE,
                          test.equality = c("mean", "var", "cov"), cov.lag = 1, ...) {
   if(nsim < 1) stop("Not a reasonable value of nsim.\n")
-  if(!(class(curve_set) %in% c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
+  if(!inherits(curve_set, c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
   curve_set <- convert_fdata(curve_set)
   if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.\n")
   x <- data_and_sim_curves(curve_set)
@@ -358,8 +335,11 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
     warning("The argument groups is not a factor. Transforming it to a factor by as.factor.\n")
     groups <- as.factor(groups)
   }
-  r <- curve_set[['r']]
   test.equality <- match.arg(test.equality)
+  if(test.equality=="cov" && !curve_set_is1d(curve_set)) {
+    stop("test.equality='cov' is only available for 1 dimensional functions")
+  }
+  r <- curve_set[['r']]
   switch(test.equality,
          "mean" = {
            if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.\n")
@@ -426,6 +406,7 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' @param variances Either "equal" or "unequal". If "equal", then the traditional F-values are used.
 #' If "unequal", then the corrected F-values are used. The current implementation uses
 #' \code{\link[stats]{lm}} to get the corrected F-values.
+#' @aliases frank.fanova2d
 #' @export
 #' @references
 #' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2018)
@@ -437,10 +418,17 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' \donttest{res <- frank.fanova(nsim=2499, curve_set=rimov, groups=groups)}
 #' \dontshow{res <- frank.fanova(nsim=4, curve_set=rimov, groups=groups, alpha=0.2)}
 #' plot(res, ylab="F-statistic")
+#'
+#' data("imageset1")
+#' res2 <- frank.fanova(nsim = 19, # Increase nsim for serious analysis!
+#'                      curve_set = imageset1$image_set,
+#'                      groups = imageset1$Group)
+#' plot(res2)
+#' plot(res2, fixedscales=FALSE)
 frank.fanova <- function(nsim, curve_set, groups, variances="equal",
                          test.equality = c("mean", "var", "cov"), cov.lag = 1, ...) {
   if(nsim < 1) stop("Not a reasonable value of nsim.\n")
-  if(!(class(curve_set) %in% c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
+  if(!inherits(curve_set, c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
   curve_set <- convert_fdata(curve_set)
   if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.\n")
   x <- data_and_sim_curves(curve_set)
@@ -449,8 +437,11 @@ frank.fanova <- function(nsim, curve_set, groups, variances="equal",
     warning("The argument groups is not a factor. Transforming it to a factor by as.factor.\n")
     groups <- as.factor(groups)
   }
-  r <- curve_set[['r']]
   test.equality <- match.arg(test.equality)
+  if(test.equality=="cov" && !curve_set_is1d(curve_set)) {
+    stop("test.equality='cov' is only available for 1 dimensional functions")
+  }
+  r <- curve_set[['r']]
   switch(test.equality,
          "mean" = {
            if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.\n")
@@ -474,98 +465,4 @@ frank.fanova <- function(nsim, curve_set, groups, variances="equal",
   cset <- create_curve_set(list(r = r, obs = obs, sim_m = sim))
   # Perform the global envelope test
   global_envelope_test(cset, alternative="greater", ...)
-}
-
-#' One-way graphical functional ANOVA for images
-#'
-#' One-way ANOVA tests for image data with graphical interpretation
-#'
-#'
-#' This function can be used to perform one-way graphical functional ANOVA tests described
-#' in Mrkvička et al. (2018). The function transforms images to vectors (1d), calls
-#' \code{\link{graph.fanova}} and transform results back to images (2d).
-#'
-#' @inheritParams graph.fanova
-#' @param image_set A set of images containing the data, see \code{\link{create_image_set}}.
-#' @param ... Additional parameters to be passed to \code{\link{graph.fanova}}.
-#' @return A \code{global_envelope2d} or \code{combined_global_envelope2d} object, which can be
-#' printed and plotted directly.
-#' @export
-#' @references
-#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2018)
-#' A one-way ANOVA test for functional data with graphical interpretation.
-#' arXiv:1612.03608 [stat.ME] (http://arxiv.org/abs/1612.03608)
-#' @examples
-#' \donttest{
-#' data("imageset1")
-#' res <- graph.fanova2d(nsim = 19, # Increase nsim for serious analysis!
-#'                       image_set = imageset1$image_set,
-#'                       groups = imageset1$Group)
-#' plot(res)
-#' # Contrasts
-#' res.c <- graph.fanova2d(nsim = 19, # Increase nsim for serious analysis!
-#'                         image_set = imageset1$image_set,
-#'                         groups = imageset1$Group,
-#'                         contrasts = TRUE)
-#' plot(res.c)
-#' plot(res.c, contours=FALSE)
-#' }
-graph.fanova2d <- function(nsim, image_set, groups, ...) {
-  if(class(image_set)[1] != "image_set") stop("The image_set does not have a valid class.\n")
-  obs_d <- dim(image_set$obs)
-  sim_d <- dim(image_set$sim_m)
-  image_set <- check_image_set_dimensions(image_set)
-  # Create curve sets transforming the 2d functions (matrices) to vectors
-  curve_set_v <- image_set_to_curve_set(image_set)
-
-  args <- list(...)
-  if("test.equality" %in% names(args))
-    if(!(args$test.equality %in% c("mean", "var"))) stop("Only options \'mean\' and \'var\' available for test.equality for images.\n")
-  res_v <- graph.fanova(nsim=nsim, curve_set=curve_set_v, groups=groups, ..., n.aver=1)
-  # Transform the results to 2d
-  res <- curve_set_results_to_image_results(res_v, image_set)
-  attr(res, "call") <- match.call()
-  res
-}
-
-#' Rank envelope F-test for images
-#'
-#' Rank envelope F-test for images
-#'
-#'
-#' A one-way functional ANOVA for images (2d functions), based on the rank envelope applied to
-#' F values.
-#' This function can be used to perform F-rank one-way functional ANOVA tests described
-#' in Mrkvička et al. (2018). The function transforms images to vectors (1d), calls
-#' \code{\link{frank.fanova}} and transform results back to images (2d).
-#'
-#' @inheritParams frank.fanova
-#' @inheritParams graph.fanova2d
-#' @param ... Additional parameters to be passed to \code{\link{frank.fanova}}.
-#' @export
-#' @references
-#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2018)
-#' A one-way ANOVA test for functional data with graphical interpretation.
-#' arXiv:1612.03608 [stat.ME] (http://arxiv.org/abs/1612.03608)
-#' @examples
-#' \donttest{
-#' data("imageset1")
-#' res <- frank.fanova2d(nsim = 19, # Increase nsim for serious analysis!
-#'                       image_set = imageset1$image_set,
-#'                       groups = imageset1$Group)
-#' plot(res)
-#' plot(res, fixedscales=FALSE, contours=FALSE)
-#' }
-frank.fanova2d <- function(nsim, image_set, groups, ...) {
-  if(class(image_set)[1] != "image_set") stop("The image_set does not have a valid class.\n")
-  obs_d <- dim(image_set$obs)
-  image_set <- check_image_set_dimensions(image_set)
-  # Create curve sets transforming the 2d functions (matrices) to vectors
-  curve_set_v <- image_set_to_curve_set(image_set)
-
-  res_v <- frank.fanova(nsim=nsim, curve_set=curve_set_v, groups=groups, ...)
-  # Transform the results to 2d
-  res <- curve_set_results_to_image_results(res_v, image_set)
-  attr(res, "call") <- match.call()
-  res
 }

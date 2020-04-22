@@ -17,7 +17,7 @@
 \arguments{
 \item{x}{an 'fboxplot' object}
 
-\item{plot_style}{One of the following "basic", "fv" or "ggplot2".
+\item{plot_style}{One of the following "basic", "fv" or "ggplot2" for 1-dimensional functions.
 The option "basic" (default) offers a very basic global envelope plot.
 The option "fv" utilizes the plot routines of the function value table \code{\link[spatstat]{fv.object}}.
 For "ggplot2", a plot with a coloured envelope ribbon is provided. Requires R library ggplot2.
@@ -25,7 +25,7 @@ The option "fv" is currently only available for tests with one test function, wh
 also tests with several tests functions.}
 
 \item{dotplot}{Logical. If TRUE, then instead of envelopes a dot plot is done.
-Suitable for low dimensional test vectors. Only applicable if \code{plot_style} is "basic".
+Suitable for low dimensional test vectors.
 Default: TRUE if the dimension is less than 10, FALSE otherwise.}
 
 \item{outliers}{Logical. If TRUE, then the functions outside the functional boxplot are drawn.}
