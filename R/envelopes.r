@@ -52,30 +52,29 @@ make_envelope_object <- function(type, curve_set, LB, UB, T_0,
 
 # Functionality for central regions based on a curve set
 # @param ... Ignored.
-#' @importFrom spatstat fv
 individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
                                       alternative = c("two.sided", "less", "greater"),
                                       probs = c((1-coverage)/2, 1-(1-coverage)/2),
                                       quantile.type = 7,
                                       central = "median") {
   isenvelope <- inherits(curve_set, "envelope")
-  if(!is.numeric(coverage) || (coverage < 0 | coverage > 1)) stop("Unreasonable value of coverage.\n")
+  if(!is.numeric(coverage) || (coverage < 0 | coverage > 1)) stop("Unreasonable value of coverage.")
   alpha <- 1 - coverage
   if(!(type %in% c("rank", "erl", "cont", "area", "qdir", "st", "unscaled")))
-    stop("No such type for global envelope.\n")
+    stop("No such type for global envelope.")
   alternative <- match.arg(alternative)
   small_significant <- TRUE
   if(type %in% c("qdir", "st", "unscaled")) {
     small_significant <- FALSE
     if(alternative != "two.sided") {
-      warning("For qdir, st and unscaled envelopes only the two.sided alternative is valid.\n")
+      warning("For qdir, st and unscaled envelopes only the two.sided alternative is valid.")
       alternative <- "two.sided"
     }
   }
   check_probs(probs)
   if(!(central %in% c("mean", "median"))) {
     central <- "median"
-    warning("Invalid option fiven for central. Using central = median.\n")
+    warning("Invalid option fiven for central. Using central = median.")
   }
   picked_attr <- pick_attributes(curve_set, alternative=alternative, type=type) # saving for attributes / plotting purposes
   curve_set <- convert_envelope(curve_set)
@@ -99,14 +98,14 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
   distance <- forder(curve_set, measure=measure, scaling=scaling,
                      alternative=alternative, probs=probs, quantile.type=quantile.type)
 
-  data_and_sim_curves <- data_and_sim_curves(curve_set) # all the functions
+  all_curves <- data_and_sim_curves(curve_set) # all the functions
   Nfunc <- length(distance) # Number of functions
   nr <- curve_set_narg(curve_set)
   # Define the central curve T_0
   T_0 <- get_T_0(curve_set)
 
   # Check reasonability of Nfunc vs alpha
-  if(Nfunc*alpha < 1-.Machine$double.eps^0.5) stop("Number of functions s is only ", Nfunc, ", but alpha is ", alpha, ". So, s*alpha is ", Nfunc*alpha, ".\n", sep="")
+  if(Nfunc*alpha < 1-.Machine$double.eps^0.5) stop("Number of functions s is only ", Nfunc, ", but alpha is ", alpha, ". So, s*alpha is ", Nfunc*alpha, ".", sep="")
 
   # The critical value
   kalpha <- critical(distance, alpha, Nfunc, small_significant)
@@ -117,7 +116,7 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
            LB <- array(0, nr)
            UB <- array(0, nr)
            for(i in 1:nr){
-             Hod <- sort(data_and_sim_curves[,i])
+             Hod <- sort(all_curves[,i])
              LB[i]<- Hod[kalpha]
              UB[i]<- Hod[Nfunc-kalpha+1]
            }
@@ -129,7 +128,7 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
            LB <- array(0, nr)
            UB <- array(0, nr)
            for(i in 1:nr){
-             lu <- range(data_and_sim_curves[j,i])
+             lu <- range(all_curves[j,i])
              LB[i]<- lu[1]
              UB[i]<- lu[2]
            }
@@ -169,14 +168,14 @@ individual_global_envelope_test <- function(curve_set, type = "erl", alpha = 0.0
                                             probs = c(0.025, 0.975), quantile.type = 7,
                                             central = "mean") {
   alternative <- match.arg(alternative)
-  if(!is.numeric(alpha) || (alpha < 0 | alpha > 1)) stop("Unreasonable value of alpha.\n")
+  if(!is.numeric(alpha) || (alpha < 0 | alpha > 1)) stop("Unreasonable value of alpha.")
   res <- individual_central_region(curve_set, type=type, coverage=1-alpha,
                                    alternative=alternative,
                                    probs=probs, quantile.type=quantile.type,
                                    central=central)
   # The type of the p-value
   possible_ties <- c('midrank', 'random', 'conservative', 'liberal', 'erl')
-  if(!(ties %in% possible_ties)) stop("Unreasonable ties argument!\n")
+  if(!(ties %in% possible_ties)) stop("Unreasonable ties argument!")
 
   # Measures for functional ordering
   distance <- attr(res, "k")
@@ -234,7 +233,7 @@ individual_global_envelope_test <- function(curve_set, type = "erl", alpha = 0.0
 # Functionality for combined_central_region and combined_global_envelope_test (two-step procedure)
 combined_CR_or_GET <- function(curve_sets, CR_or_GET = c("CR", "GET"), coverage, ...) {
   ntests <- length(curve_sets)
-  if(ntests < 1) stop("Only one curve_set, no combining to be done.\n")
+  if(ntests < 1) stop("Only one curve_set, no combining to be done.")
   check_curve_set_dimensions(curve_sets)
   CR_or_GET <- match.arg(CR_or_GET)
 
@@ -268,9 +267,9 @@ combined_CR_or_GET <- function(curve_sets, CR_or_GET = c("CR", "GET"), coverage,
   curves_for_envelope_ind <- which(attr(res_erl, "k") >= kalpha)
   # Curves
   curve_sets <- lapply(curve_sets, FUN=convert_envelope)
-  data_and_sim_curves_l <- lapply(curve_sets, function(x) { data_and_sim_curves(x) })
+  all_curves_l <- lapply(curve_sets, function(x) { data_and_sim_curves(x) })
   # Curves from which to calculate the convex hull
-  curves_for_envelope_l <- lapply(data_and_sim_curves_l, function(x) { x[curves_for_envelope_ind,] })
+  curves_for_envelope_l <- lapply(all_curves_l, function(x) { x[curves_for_envelope_ind,] })
   # Bounding curves
   LB <- lapply(curves_for_envelope_l, FUN = function(x) { apply(x, MARGIN=2, FUN=min) })
   UB <- lapply(curves_for_envelope_l, FUN = function(x) { apply(x, MARGIN=2, FUN=max) })
@@ -359,7 +358,7 @@ GEprinthelper <- function(x, ...) {
 
 #' Print method for the class 'global_envelope'
 #'
-#' @param x an 'global_envelope' object
+#' @param x A 'global_envelope' object
 #' @param ... Ignored.
 #' @export
 print.global_envelope <- function(x, ...) {
@@ -368,7 +367,7 @@ print.global_envelope <- function(x, ...) {
 
 #' Print method for the class 'global_envelope'
 #'
-#' @param x an 'combined_global_envelope' object
+#' @param x A 'combined_global_envelope' object
 #' @param ... Ignored.
 #' @export
 print.combined_global_envelope <- function(x, ...) {
@@ -378,12 +377,11 @@ print.combined_global_envelope <- function(x, ...) {
 #' Plot method for the class 'global_envelope'
 #'
 #' @param x An 'global_envelope' object
-#' @param plot_style One of the following "basic", "fv" or "ggplot2" for 1-dimensional functions.
-#' The option "basic" (default) offers a very basic global envelope plot.
-#' The option "fv" utilizes the plot routines of the function value table \code{\link[spatstat]{fv.object}}.
+#' @param plot_style One of the following "ggplot2" or "basic" or "fv".
 #' For "ggplot2", a plot with a coloured envelope ribbon is provided. Requires R library ggplot2.
-#' The option "fv" is currently only available for tests with one test function, whereas the other true allow
-#' also tests with several tests functions.
+#' The option "basic" (default) offers a very basic plot.
+#' The option "fv" utilizes the plot routines of the function value table \code{\link[spatstat]{fv.object}},
+#' available only for \pkg{\link{spatstat}}-specific cases.
 #' @param dotplot Logical. If TRUE, then instead of envelopes a dot plot is done.
 #' Suitable for low dimensional test vectors.
 #' Default: TRUE if the dimension is less than 10, FALSE otherwise.
@@ -407,7 +405,7 @@ print.combined_global_envelope <- function(x, ...) {
 #'
 #' @export
 #' @importFrom ggplot2 theme_minimal
-#' @seealso \code{\link{central_region}}
+#' @seealso \code{\link{central_region}}, \code{\link{global_envelope_test}}
 plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
                                  dotplot = length(x$r)<10,
                                  main, ylim, xlab, ylab,
@@ -415,6 +413,8 @@ plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
                                  base_size = 11,
                                  labels = NULL, add = FALSE, digits = 3, legend = TRUE, ...) {
   plot_style <- match.arg(plot_style)
+  if(plot_style == "fv" && !inherits(x, "fv"))
+    stop("The fv style supported only when the global envelope has been made for an envelope object of spatstat.")
   # main
   if(missing('main')) main <- env_main_default(x, digits=digits)
   # ylim
@@ -482,11 +482,11 @@ plot.global_envelope <- function(x, plot_style = c("ggplot2", "fv", "basic"),
 plot.combined_global_envelope <- function(x,
                                  main, ylim = NULL, xlab, ylab,
                                  env.col = 1, color_outside = TRUE, sign.col = "red",
-                                 base_size = 12,
+                                 base_size = 11,
                                  labels = NULL, add = FALSE, digits = 3,
                                  level = 1, ncol = 2 + 1*(length(x)==3), nticks = 5,
                                  legend = TRUE, ...) {
-  if(!(level %in% c(1,2))) stop("Unreasonable value for level.\n")
+  if(!(level %in% c(1,2))) stop("Unreasonable value for level.")
   # main
   if(missing('main')) {
     alt <- get_alternative(x[[1]])
@@ -532,20 +532,6 @@ plot.combined_global_envelope <- function(x,
 #' Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
 #' or an \code{\link[spatstat]{envelope}} object, the function \code{central_region}
 #' construcst a central region, i.e. a global envelope, from the given set of functions (or vectors).
-#' There are two options for the functions that the \code{curve_set} can contain:
-#' \itemize{
-#'  \item If the component \code{obs} of the \code{curve_set} is a matrix,
-#' then it is assumed that all the functions are data/observed. In this case,
-#' the component \code{sim_m} of the \code{curve_set} (which can be then NULL)
-#' is ignored and the central region constructed from the functions given in \code{obs}.
-#'  \item If the component \code{obs} is a vector, then \code{sim_m} should be provided as well
-#' and it is assumed to contain simulated functions (obtained, e.g., from some model or by permutation).
-#' The central region is calculated from all the functions.
-#' }
-#' Thus the \code{curve_set} contains functions (or vectors)
-#' \eqn{T_1(r),\dots,T_s(r)}{T_1(r),...,T_s(r)}.
-#' In the case of one observed function only,
-#' the data function is considered to be \eqn{T_1(r)}{T_1(r)}.
 #'
 #' Generally an envelope is a band bounded by the vectors (or functions)
 #' \eqn{T_{low}}{T_lo} and \eqn{T_{hi}}{T_hi}.
@@ -561,7 +547,7 @@ plot.combined_global_envelope <- function(x,
 #' The type of the global envelope can be chosen with the argument \code{type} and
 #' the options are given in the following.
 #' Further information about the measures, on which the global envelopes are based,
-#' can be found in \code{\link{forder}}.
+#' can be found in Myllymäki and Mrkvička (2020, Section 2.).
 #' \itemize{
 #'  \item \code{'rank'}: The global rank envelope
 #' proposed by Myllymäki et al. (2017) based on the extreme rank defined as the minimum of pointwise
@@ -594,8 +580,8 @@ plot.combined_global_envelope <- function(x,
 #' provided for reference.
 #' }
 #'
-#' For each curve in the curve_set, both the data curve and the simulations,
-#' an above mention measure k is determined. The measure values
+#' The values of the chosen measure k are determined for each curve in the \code{curve_set}, and
+#' the values
 #' \eqn{k_1, k_2, ..., k_s}{k_1, k_2, ..., k_s}
 #' are returned in the attribute 'k' (in a case of one observed curve only, k[1] is its value).
 #' Based on the chosen measure, the central region, i.e. the global envelope, is constructed
@@ -604,13 +590,13 @@ plot.combined_global_envelope <- function(x,
 #'
 #' If a list of (suitable) objects are provided in the argument \code{curve_sets},
 #' then by default (\code{nstep = 2}) the two-step combining procedure is used to
-#' construct the combined global envelope as described in Myllymäki and Mrkvička (2019).
+#' construct the combined global envelope as described in Myllymäki and Mrkvička (2020, Section 2.2.).
 #' If \code{nstep = 1} and the lengths of the multivariate vectors in each component
 #' of the list are equal, then the one-step combining procedure is used where the
-#' functions are concatenated together into a one long vector.
+#' functions are concatenated together into a one long vector (see again Myllymäki and Mrkvička, 2020, Section 2.2.).
 #'
 #' @references
-#' Mrkvička, T., Hahn, U. and Myllymäki, M. (2018). A one-way ANOVA test for functional data with graphical interpretation. arXiv:1612.03608 [stat.ME]
+#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #'
 #' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
@@ -618,7 +604,7 @@ plot.combined_global_envelope <- function(x,
 #'
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 79: 381–404. doi: 10.1111/rssb.12172
 #'
-#' Myllymäki, M. and Mrkvička, T. Global envelopes in R.
+#' Myllymäki, M. and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 #'
 #' Ripley, B.D. (1981). Spatial statistics. Wiley, New Jersey.
 #'
@@ -663,11 +649,11 @@ plot.combined_global_envelope <- function(x,
 #'
 #' The "combined_global_envelope" is a list of "global_envelope" objects
 #' corresponding to the components of \code{curve_sets}. The second level envelope
-#' on which the envelope construction is based on is saved in the attribute
+#' on which the envelope construction is based is saved in the attribute
 #' "level2_ge".
 #'
 #' @export
-#' @seealso \code{\link{global_envelope_test}}
+#' @seealso \code{\link{forder}}, \code{\link{global_envelope_test}}
 #' @aliases global_envelope central_region2d
 #' @examples
 #' ## A central region of a set of functions
@@ -788,8 +774,8 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   plot(res, xlab = "Age (years)", ylab = "")
 #' }
 fBoxplot <- function(curve_sets, factor = 1.5, ...) {
-  if(class(curve_sets)[1] != "list") { if(!curve_set_is1d(curve_sets)) stop("curve_sets$r should be a vector.\n") }
-  else if(!all(sapply(curve_sets, FUN=curve_set_is1d))) stop("r of the curve_sets should be a vector.\n")
+  if(class(curve_sets)[1] != "list") { if(!curve_set_is1d(curve_sets)) stop("curve_sets$r should be a vector.") }
+  else if(!all(sapply(curve_sets, FUN=curve_set_is1d))) stop("r of the curve_sets should be a vector.")
   res <- central_region(curve_sets, ...)
   if(inherits(res, "combined_global_envelope")) {
     dist <- factor * (attr(res, "level2_ge")$hi - attr(res, "level2_ge")$lo)
@@ -827,12 +813,13 @@ fBoxplot <- function(curve_sets, factor = 1.5, ...) {
 #'
 #' @param x an 'fboxplot' object
 #' @inheritParams plot.global_envelope
-#' @param outliers Logical. If TRUE, then the functions outside the functional boxplot are drawn.
+#' @param outliers Logical. If TRUE, then the functions outside the functional boxplot are drawn,
+#'  together with a label (= index in the set of functions).
 #' @param bp.col The color for the boxplot bounds. Default 2 (red).
 #' @param cr.col The color for the central region bounds.
 #' @param ... Additional arguments to be passed to \code{\link{plot.global_envelope}}.
 #' @export
-plot.fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"),
+plot.fboxplot <- function(x, plot_style = c("ggplot2", "basic"),
                           dotplot = length(x$r)<10,
                           outliers = TRUE, bp.col = 2, cr.col = 1, ...) {
   plot_style <- match.arg(plot_style)
@@ -840,12 +827,6 @@ plot.fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"),
   cr <- x
   x$lo <- attr(x, "whisker.lo"); x$hi <- attr(x, "whisker.hi") # Functional boxplot
 
-  if(retick_xaxis(x)$retick_xaxis) {
-    if(plot_style == "fv") {
-      warning("The plot style fv not available for the case where r distances are not increasing.\n Setting plot_style to basic.\n")
-      plot_style <- "basic"
-    }
-  }
   switch(plot_style,
          basic = {
            if(dotplot) {
@@ -860,18 +841,6 @@ plot.fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"),
              lines(cr$r, cr$lo, lty=2, col=cr.col)
              lines(cr$r, cr$hi, lty=2, col=cr.col)
            }
-         },
-         fv = {
-           plot.global_envelope(x, plot_style=plot_style, env.col=bp.col, ..., curve_sets=NULL)
-           # Outliers
-           funcs <- curve_set_funcs(curve_sets)
-           for(i in 1:ncol(funcs)) {
-             if(any(funcs[,i] < x$lo | funcs[,i] > x$hi))
-               lines(curve_sets$r, funcs[,i], col='grey50')
-           }
-           # Central region
-           lines(cr$r, cr$lo, lty=2, col=cr.col)
-           lines(cr$r, cr$hi, lty=2, col=cr.col)
          },
          ggplot2 = {
            plot.global_envelope(x, plot_style=plot_style, env.col=bp.col, ..., curve_sets=curve_sets, x2=cr)
@@ -888,7 +857,7 @@ plot.fboxplot <- function(x, plot_style = c("ggplot2", "fv", "basic"),
 #' @export
 plot.combined_fboxplot <- function(x, level = 1,
                           outliers = TRUE, bp.col = 2, cr.col = 1, ...) {
-  if(!(level %in% c(1,2))) stop("Unreasonable value for level.\n")
+  if(!(level %in% c(1,2))) stop("Unreasonable value for level.")
   if(outliers) curve_sets <- attr(x, "curve_sets") else curve_sets <- NULL
   cr <- x
   attr(x, "level2_ge")$lo <- attr(attr(x, "level2_ge"), "whisker.lo")
@@ -953,8 +922,8 @@ plot.combined_fboxplot <- function(x, level = 1,
 #'   \item "unscaled", the unscaled envelope (providing a baseline) that has a contant width and
 #'   that corresponds to the classical maximum deviation test (Ripley, 1981).
 #' }
-#' See \code{\link{forder}} and \code{\link{central_region}} and the references
-#' for more detailed description of the measures and the corresponding envelopes.
+#' See Myllymäki and Mrkvička (2020, Section 2.) for more detailed description of the measures and
+#' the corresponding envelopes.
 #'
 #' The first four types are global rank envelopes.
 #' The \code{'rank'} envelope test is a completely non-parametric test,
@@ -982,8 +951,7 @@ plot.combined_fboxplot <- function(x, level = 1,
 #' \item 'st': the studentized MAD measure (Myllymäki et al., 2015, 2017)
 #' \item 'unscaled': the unscaled MAD measure (Ripley, 1981)
 #' }
-#' See more detailed description of the envelopes and measures in \code{\link{central_region}}
-#' and \code{\link{forder}}.
+#' See more detailed description of the envelopes and measures in Myllymäki and Mrkvička (2020, Section 2.).
 #'
 #' @section Global envelope:
 #' Based on the measures used to rank the functions, the 100(1-alpha)\% global envelope is provided.
@@ -1004,7 +972,8 @@ plot.combined_fboxplot <- function(x, level = 1,
 #' @section Number of simulations:
 #' For the global \code{"rank"} envelope test, Myllymäki et al. (2017) recommended to use
 #' at least 2500 simulations for testing at the significance level alpha = 0.05 for single
-#' function tests, based on experiments with summary functions for point processes.
+#' function tests, based on experiments with summary functions for point processes evaluated
+#' approximately at 500 argument values.
 #' In this case, the width of the p-interval associated with the extreme rank measure tended
 #' to be smaller than 0.01.
 #' The tests \code{'erl'}, \code{'cont'} and \code{'area'}, similarly as
@@ -1025,7 +994,7 @@ plot.combined_fboxplot <- function(x, level = 1,
 #' @references
 #' Mrkvička, T., Myllymäki, M. and Hahn, U. (2017). Multiple Monte Carlo testing, with applications in spatial point processes. Statistics & Computing 27 (5): 1239-1255. doi: 10.1007/s11222-016-9683-9
 #'
-#' Mrkvička, T., Myllymäki, M., Jilek, M., and Hahn, U. (2018). A one-way ANOVA test for functional data with graphical interpretation. arXiv:1612.03608 [stat.ME]
+#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #'
 #' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
@@ -1033,7 +1002,7 @@ plot.combined_fboxplot <- function(x, level = 1,
 #'
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 79: 381–404. doi: 10.1111/rssb.12172
 #'
-#' Myllymäki, M., Mrkvička, T. Global envelopes in R.
+#' Myllymäki, M. and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 #'
 #' Ripley, B.D. (1981). Spatial statistics. Wiley, New Jersey.
 #'
@@ -1055,20 +1024,16 @@ plot.combined_fboxplot <- function(x, level = 1,
 #' For 'erl' the extreme rank length p-value is calculated.
 #' The default is 'erl'.
 #' @param ... Additional parameters to be passed to \code{\link{central_region}}.
-#' @return Either an object of class "global_envelope" and "fv"
-#' (see \code{\link[spatstat]{fv.object}}) or "combined_global_envelope" for
-#' combined tests. The objects can be printed and plotted directly.
+#' @return Either an object of class "global_envelope" or "combined_global_envelope"
+#' (the latter for combined tests). The objects can be printed and plotted directly.
 #'
 #' The "global_envelope" is essentially a data frame containing columns
 #' \itemize{
-#' \item r = the vector of values of the argument r at which the test was made
-#' \item obs = values of the data function
-#' \item lo = the lower envelope based on the simulated functions
-#' \item hi = the upper envelope based on the simulated functions
-#' \item central = If the curve_set (or envelope object) contains a component 'theo',
-#'       then this function is used as the central curve and returned in this component.
-#'       Otherwise, the central_curve is the mean of the test functions T_i(r), i=2, ..., s+1.
-#'       Used for visualization only.
+#' \item the values of the argument r at which the test was made, copied from the argument \code{curve_sets} with the corresponding names
+#' \item obs = values of the data function, copied from the argument \code{curve_sets}; missing if more than one observed function
+#' \item lo = the lower envelope
+#' \item hi = the upper envelope
+#' \item central = a central curve as specified in the argument \code{central}.
 #' }
 #' Moreover, the return value has the same attributes as the object returned by
 #' \code{\link{central_region}} and in addition
@@ -1088,7 +1053,7 @@ plot.combined_fboxplot <- function(x, level = 1,
 #' @export
 #' @seealso \code{\link{plot.global_envelope}}, \code{\link{central_region}},
 #' \code{\link{GET.composite}}
-#' @aliases GET global_envelope_test2d
+#' @aliases global_envelope_test2d
 #' @examples
 #' # Goodness-of-fit testing for simple hypothesis
 #' if(require("spatstat", quietly=TRUE)) {
@@ -1166,33 +1131,6 @@ plot.combined_fboxplot <- function(x, level = 1,
 #'   # 4) Plot the test result
 #'   plot(res, ylab=expression(italic(L[mm](r)-L(r))))
 #'
-#'   # Goodness-of-fit test (typically conservative, see ?GET.composite for adjusted tests)
-#'   #=====================
-#'   X <- unmark(spruces)
-#'   # Minimum distance between points in the pattern
-#'   min(nndist(X))
-#'   # Fit a model
-#'   fittedmodel <- ppm(X, interaction=Hardcore(hc=1)) # Hardcore process
-#'
-#'   # Simulating Gibbs process by 'envelope' is slow, because it uses the MCMC algorithm
-#'   #env <- envelope(fittedmodel, fun="Jest", nsim=999, savefuns=TRUE,
-#'   #                correction="none", r=seq(0, 4, length=500))
-#'
-#'   # Using direct algorihm can be faster, because the perfect simulation is used here.
-#'   simulations <- NULL
-#'   nsim <- 999 # Number of simulations
-#'   for(j in 1:nsim) {
-#'      simulations[[j]] <- rHardcore(beta=exp(fittedmodel$coef[1]),
-#'                                    R=fittedmodel$interaction$par$hc,
-#'                                    W=X$window)
-#'      if(j%%10==0) cat(j, "...", sep="")
-#'   }
-#'   env <- envelope(X, simulate=simulations, fun="Jest", nsim=length(simulations),
-#'                   savefuns=TRUE, correction="none", r=seq(0, 4, length=500))
-#'   curve_set <- crop_curves(env, r_min=1, r_max=3.5)
-#'   res <- global_envelope_test(curve_set, type="erl"); plot(res, ylab=expression(italic(J(r))))
-#'   }
-#'
 #'   # A combined global envelope test
 #'   #================================
 #'   # As an example test CSR of the saplings point pattern by means of
@@ -1242,6 +1180,7 @@ plot.combined_fboxplot <- function(x, level = 1,
 #'   res <- global_envelope_test(curve_sets=list(curve_set_L, curve_set_F,
 #'                                               curve_set_G, curve_set_J))
 #'   plot(res, labels=c("L(r)-r", "F(r)", "G(r)", "J(r)"))
+#'   }
 #' }
 #'
 #' # A test based on a low dimensional random vector
@@ -1265,58 +1204,6 @@ plot.combined_fboxplot <- function(x, level = 1,
 #'   cset2 <- create_curve_set(list(r=1:3, obs=c(X[,1],X[,2],t3(X,Y)), sim_m=rbind(t(Y), t3(Y,Y))))
 #'   res2 <- global_envelope_test(cset2)
 #'   plot(res2)
-#' }
-#'
-#' # Examples with image sets
-#'
-#' # Example of spatial point pattern residuals
-#' #===========================================
-#' if(require("spatstat", quietly=TRUE)) {
-#'   data(cells)
-#'   X <- cells
-#'   # Fit the hard-core process
-#'   model <- ppm(X, interaction=Hardcore())
-#'   summary(model)
-#'   HD <- 0.08168525 # Hard-core process
-#'   # Choose a bandwitdh by Scott's rule of thumb
-#'   ds <- bw.scott(X); ds
-#'   # Calculate raw residuals of the fitted model
-#'   # (To use the default pixel array dimensions remove dimyx, see ?as.mask)
-#'   u <- diagnose.ppm(model, type="raw", rbord = HD, which ="smooth",
-#'                     sigma=ds, plot.it=FALSE, dimyx=32)
-#'   obs <- u$smooth$Z$v
-#'   # Generate simulations from the hard-core null model
-#'   \dontshow{nsim <- 19}
-#'   \donttest{nsim <- 499 # Number of simulations; increase for serious analysis!}
-#'   simulations <- NULL
-#'   ext.factor <- max(X$window$xrange[2]-X$window$xrange[1],
-#'                     X$window$yrange[2]-X$window$yrange[1]) / 10
-#'   win.extend <- owin(c(X$window$xrange[1]-ext.factor, X$window$xrange[2]+ext.factor),
-#'                      c(X$window$yrange[1]-ext.factor, X$window$yrange[2]+ext.factor))
-#'   mod02 <- list(cif="hardcore", par=list(beta=exp(model$fitin$coefs[1]),hc=HD), w=win.extend)
-#'   # starting point pattern in an extended window
-#'   x.start <- runifpoint(X$n, win=win.extend)
-#'   # simulations
-#'   for(sss in 1:nsim){
-#'     uppp <- rmh(model=mod02, start=list(x.start=x.start), control=list(p=1,nrep=1e5,nverb=5000))
-#'     f <- uppp$x > X$window$xrange[1] & uppp$x < X$window$xrange[2] &
-#'          uppp$y > X$window$yrange[1] & uppp$y < X$window$yrange[2]
-#'     simulations[[sss]] <- ppp(uppp$x[f], uppp$y[f], window=X$window)
-#'   }
-#'   # Calculate the raw residuals for simulations
-#'   sim <- array(0, c(u$smooth$Z$dim, nsim))
-#'   for(i in 1:length(simulations)) {
-#'     model <- ppm(simulations[[i]],interaction=Hardcore(HD));
-#'     u_sim <- diagnose.ppm(model, type="raw", rbord = HD, which ="smooth",
-#'                           sigma=ds, plot.it=FALSE, dimyx=32)
-#'     sim[,,i] <- u_sim$smooth$Z$v
-#'     if((i %% 100)==0) cat(i, ' ')
-#'   }
-#'   # Constract the global envelope test for the (2D) raw residuals
-#'   iset <- create_image_set(list(obs=obs, sim_m=sim))
-#'   res <- global_envelope_test(iset, type="area")
-#'   plot(res)
-#'   plot(res) + ggplot2::scale_fill_gradient(low="black", high="white")
 #' }
 global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
                           alternative = c("two.sided", "less", "greater"),
@@ -1384,7 +1271,7 @@ global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
 #'
 #' Mrkvička, T., Myllymäki, M. and Hahn, U. (2017). Multiple Monte Carlo testing, with applications in spatial point processes. Statistics & Computing 27 (5): 1239-1255. doi: 10.1007/s11222-016-9683-9
 #'
-#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2018). A one-way ANOVA test for functional data with graphical interpretation. arXiv:1612.03608 [stat.ME]
+#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #'
 #' @param curve_set A curve_set (see \code{\link{create_curve_set}}) or an \code{\link[spatstat]{envelope}}
 #'  object. If an envelope object is given, it must contain the summary
@@ -1426,7 +1313,7 @@ global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
 #'   res <- rank_envelope(curve_set); plot(res)
 #' }
 rank_envelope <- function(curve_set, type = "rank", ...) {
-  if(!(type %in% c("rank", "erl", "cont", "area"))) stop("No such type for the global rank envelope.\n")
+  if(!(type %in% c("rank", "erl", "cont", "area"))) stop("No such type for the global rank envelope.")
   global_envelope_test(curve_set, type=type, ...)
 }
 
@@ -1483,7 +1370,7 @@ rank_envelope <- function(curve_set, type = "rank", ...) {
 #' }
 qdir_envelope <- function(curve_set, ...) {
   args <- list(...)
-  if("type" %in% names(args)) warning("type is hardcoded to be qdir here. No other options.\n")
+  if("type" %in% names(args)) warning("type is hardcoded to be qdir here. No other options.")
   global_envelope_test(curve_set, type="qdir", ...)
 }
 
@@ -1497,7 +1384,7 @@ qdir_envelope <- function(curve_set, ...) {
 #' @rdname qdir_envelope
 st_envelope <- function(curve_set, ...) {
   args <- list(...)
-  if("type" %in% names(args)) warning("type is hardcoded to be st here. No other options.\n")
+  if("type" %in% names(args)) warning("type is hardcoded to be st here. No other options.")
   global_envelope_test(curve_set, type="st", ...)
 }
 
@@ -1515,6 +1402,6 @@ st_envelope <- function(curve_set, ...) {
 #' @rdname qdir_envelope
 unscaled_envelope <- function(curve_set, ...) {
   args <- list(...)
-  if("type" %in% names(args)) warning("type is hardcoded to be unscaled here. No other options.\n")
+  if("type" %in% names(args)) warning("type is hardcoded to be unscaled here. No other options.")
   global_envelope_test(curve_set, type="unscaled", ...)
 }

@@ -109,7 +109,7 @@ ecdfcontrasts.m <- function(x, groups, r) {
 #' }
 GET.necdf <- function(x, r = seq(min(unlist((lapply(x, min)))), max(unlist((lapply(x, max)))), length=100),
                       contrasts = FALSE, nsim, ...) {
-  if(!is.list(x) && length(x)<2) stop("At least two groups should be provided.\n")
+  if(!is.list(x) && length(x)<2) stop("At least two groups should be provided.")
   x.lengths <- as.numeric(lapply(x, FUN = length))
   if(!is.null(names(x))) groups <- rep(names(x), times=x.lengths)
   else groups <- rep(1:length(x), times=x.lengths)
@@ -134,7 +134,7 @@ GET.necdf <- function(x, r = seq(min(unlist((lapply(x, min)))), max(unlist((lapp
   # Simulations by permuting to which groups each value belongs to
   sim <- replicate(nsim, fun(x, sample(groups, size=length(groups), replace=FALSE), r), simplify = "array")
   complabels <- colnames(obs)
-  
+
   csets <- list()
   for(i in 1:ncol(obs)) {
     csets[[i]] <- create_curve_set(list(r = r,

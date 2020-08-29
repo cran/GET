@@ -108,7 +108,7 @@ check_curve_set_content <- function(curve_set, allow_Inf_values = FALSE) {
   else if(is.data.frame(r)) {
     if(!(identical(sort(names(r)), c("height", "width", "x", "y"))
        || identical(sort(names(r)), c("xmax", "xmin", "ymax", "ymin"))))
-      stop('The names of curve_set[[\'r\']] must be either c("height", "width", "x", "y") or c("xmax", "xmin", "ymax", "ymin").\n')
+      stop('The names of curve_set[[\'r\']] must be either c("height", "width", "x", "y") or c("xmax", "xmin", "ymax", "ymin").')
     n_r <- nrow(r)
     if(!all(sapply(r, is.numeric)) || !all(sapply(r, is.finite))) {
       stop('curve_set[["r"]] must have only finite numeric values.')
@@ -346,8 +346,8 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
          ggplot2 = {
              df <- data.frame(r = rvalues, f = c(funcs), id = rep(1:ncol(funcs), each=nrow(funcs)))
              p <- ( ggplot()
-                   + geom_line(data=df[df$id==1,], aes_(x = ~r, y = ~f, group = ~id), col=col_obs)
                    + geom_line(data=df[df$id!=1,], aes_(x = ~r, y = ~f, group = ~id), col=col_sim)
+                   + geom_line(data=df[df$id==1,], aes_(x = ~r, y = ~f, group = ~id), col=col_obs)
                    + scale_y_continuous(name = ylab, limits = ylim)
                    + labs(title=main)
                    + ThemePlain(base_size=base_size))
@@ -386,6 +386,7 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
 #' @param idx Indices of functions to plot for 2d plots.
 #' @param ... Additional parameters to be passed to plot and lines.
 #' @inheritParams plot.global_envelope
+#' @inheritParams plot.combined_global_envelope
 #'
 #' @export
 #' @importFrom ggplot2 ggplot
@@ -394,13 +395,13 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
 #' @examples
 #' data(abide_9002_23)
 #' plot(abide_9002_23$curve_set, idx=c(1, 27))
-plot.curve_set2d <- function(x, idx=1, base_size = 11, ...) {
+plot.curve_set2d <- function(x, idx=1, base_size = 11, ncol = 2 + 1*(length(idx)==3), ...) {
   funcs <- curve_set_funcs(x)
   rdf <- curve_set_rdf(x)
   data <- do.call(rbind, lapply(idx, function(i) data.frame(idx=i, f=funcs[,i])))
   df <- cbind(rdf, data)
   return(ggplot() + choose_geom(df, varfill='f') +
-           facet_wrap("idx") + labs(x="x", y="y", fill=""))
+           facet_wrap("idx", ncol=ncol) + labs(x="x", y="y", fill="") + ThemePlain2d())
 }
 
 # Combine curve sets.
@@ -457,6 +458,10 @@ data_and_sim_curves <- function(curve_set) {
 # Each column corresponds to a function.
 curve_set_funcs <- function(curve_set) {
   curve_set[['funcs']]
+}
+# A helper function to give the names of the functions
+curve_set_funcnames <- function(curve_set) {
+  colnames(curve_set[['funcs']])
 }
 
 # A helper function to obtain the mean of functions in curve_set.
@@ -543,5 +548,15 @@ curve_set_1obs <- function(curve_set) {
 #' @export
 subset.curve_set <- function(x, subset, ...) {
   x[['funcs']] <- x[['funcs']][, subset]
+  x
+}
+
+#' @export
+`[.curve_set` <- function(x, i, j) {
+  x$r <- if(is.data.frame(x$r)) x$r[i,]
+    else x$r[i]
+  x$funcs <- x$funcs[i,j,drop=FALSE]
+  if(!missing(j) && !(1 %in% j))
+    x$is1obs <- FALSE
   x
 }

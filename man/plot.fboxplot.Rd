@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{fboxplot}(
   x,
-  plot_style = c("ggplot2", "fv", "basic"),
+  plot_style = c("ggplot2", "basic"),
   dotplot = length(x$r) < 10,
   outliers = TRUE,
   bp.col = 2,
@@ -17,18 +17,18 @@
 \arguments{
 \item{x}{an 'fboxplot' object}
 
-\item{plot_style}{One of the following "basic", "fv" or "ggplot2" for 1-dimensional functions.
-The option "basic" (default) offers a very basic global envelope plot.
-The option "fv" utilizes the plot routines of the function value table \code{\link[spatstat]{fv.object}}.
+\item{plot_style}{One of the following "ggplot2" or "basic" or "fv".
 For "ggplot2", a plot with a coloured envelope ribbon is provided. Requires R library ggplot2.
-The option "fv" is currently only available for tests with one test function, whereas the other true allow
-also tests with several tests functions.}
+The option "basic" (default) offers a very basic plot.
+The option "fv" utilizes the plot routines of the function value table \code{\link[spatstat]{fv.object}},
+available only for \pkg{\link{spatstat}}-specific cases.}
 
 \item{dotplot}{Logical. If TRUE, then instead of envelopes a dot plot is done.
 Suitable for low dimensional test vectors.
 Default: TRUE if the dimension is less than 10, FALSE otherwise.}
 
-\item{outliers}{Logical. If TRUE, then the functions outside the functional boxplot are drawn.}
+\item{outliers}{Logical. If TRUE, then the functions outside the functional boxplot are drawn,
+together with a label (= index in the set of functions).}
 
 \item{bp.col}{The color for the boxplot bounds. Default 2 (red).}
 

@@ -14,9 +14,7 @@
 #'
 #' @usage data(rimov)
 #' @references
-#' Mrkvička, T., Hahn, U. and Myllymäki, M. (2018)
-#' A one-way ANOVA test for functional data with graphical interpretation.
-#' arXiv:1612.03608v2 [stat.ME] (http://arxiv.org/abs/1612.03608v2)
+#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #' @keywords datasets
 #' @keywords curves
 #' @name rimov
@@ -27,7 +25,7 @@
 #' groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
 #' for(i in 1:3)
 #'   print(plot(subset(rimov, groups==i),
-#'              main=paste("group ", i, sep=""),
+#'              main=paste("Group ", i, sep=""),
 #'              ylab="Temperature"))
 #' # See example analysis in ?graph.fanova
 NULL

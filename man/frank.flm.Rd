@@ -12,7 +12,7 @@ frank.flm(
   curve_sets,
   factors = NULL,
   savefuns = TRUE,
-  ...,
+  lm.args = NULL,
   GET.args = NULL,
   mc.cores = 1,
   mc.args = NULL,
@@ -39,10 +39,11 @@ the curve set representing Y. Also \code{\link[fda.usc]{fdata}} objects allowed.
 are constant for all argument values. The number of rows of the data frame should be equal
 to the number of curves. Each column should specify the values of a factor.}
 
-\item{savefuns}{Logical. If TRUE, then the functions from permutations are saved to the attribute
-simfuns.}
+\item{savefuns}{Logical or "return". If TRUE, then the functions from permutations are saved to the attribute simfuns.
+If "return", then the function returns the permutations in a curve_set, instead of the result of the envelope test on those;
+this can be used by \code{\link{partial_forder}}.}
 
-\item{...}{Additional arguments to be passed to \code{\link[stats]{lm}}. See details.}
+\item{lm.args}{A named list of additional arguments to be passed to \code{\link[stats]{lm}}. See details.}
 
 \item{GET.args}{A named list of additional arguments to be passed to \code{\link{global_envelope_test}}.}
 
@@ -71,7 +72,9 @@ a nonparametric test of significance of a covariate in the functional GLM.
 Similarly as in the graphical functional GLM (\code{\link{graph.flm}}),
 the Freedman-Lane algorithm (Freedman and Lane, 1983) is applied to permute the functions
 (to obtain the simulations under the null hypothesis of "no effects");
-consequently, the test approximately achieves the desired significance level.
+consequently, the test achieves the desired significance level only approximately.
+If the reduced model contains only a constant, then the algorithm corresponds to
+simple permutation of raw data.
 In contrast to the graphical functional GLM, the F rank functional GLM is based on the
 F-statistics that are calculated at each argument value of the functions.
 The global envelope test is applied to the observed and simulated F-statistics.
@@ -85,21 +88,21 @@ model the interesting factors whose effects are under investigation.
 There are different versions of the implementation depending on the application.
 \itemize{
 \item If all the covariates are constant across the functions, i.e. they can be provided in the
-argument \code{factors}, and there are no extra arguments given by the user in \code{...}, then a
+argument \code{factors}, and there are no extra arguments given by the user in \code{lm.args}, then a
 fast implementation is used to directly compute the F-statistics.
 \item If all the covariates are constant across the functions, but there are some extra arguments,
 then a linear model is fitted separately by least-squares estimation to
 the data at each argument value of the functions fitting a multiple linear model by \code{\link[stats]{lm}}.
-The possible extra arguments passed in \code{...} to \code{\link[stats]{lm}} must be of the form that
+The possible extra arguments passed in \code{lm.args} to \code{\link[stats]{lm}} must be of the form that
 \code{\link[stats]{lm}} accepts for fitting a multiple linear model. In the basic case, no extra arguments are
 needed.
 \item If some of the covariates vary across the space, i.e. they are provided in the list of curve sets in
 the argument \code{curve_sets} together with the dependent functions, but there are no extra arguments given
-by the user in \code{...}, there is a rather fast implementation of the F-value calculation (which does not
+by the user in \code{lm.args}, there is a rather fast implementation of the F-value calculation (which does not
 use \code{\link[stats]{lm}}).
 \item If some of the covariates vary across the space and there are user specified extra arguments given in
-\code{...}, then the implementation fits a linear model at each argument value of the functions using
-\code{\link[stats]{lm}}, which can be rather slow. The arguments \code{...} are passed to \code{\link[stats]{lm}}
+\code{lm.args}, then the implementation fits a linear model at each argument value of the functions using
+\code{\link[stats]{lm}}, which can be rather slow. The arguments \code{lm.args} are passed to \code{\link[stats]{lm}}
 for fitting each linear model.
 }
 By default the fastest applicable method is used. This can be changed by setting \code{method} argument.

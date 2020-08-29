@@ -55,7 +55,7 @@ pick_attributes <- function(curve_set, alternative, type) {
 retick_xaxis <- function(x) {
   if(!inherits(x, "list")) x <- list(x)
   if(any(sapply(x, FUN=function(x) { !(inherits(x, c("global_envelope", "fboxplot", "curve_set"))) })))
-    stop("x should consist of global_envelope objects.\n")
+    stop("x should consist of global_envelope objects.")
   r_values_ls <- lapply(x, FUN=function(x) x$r)
   r_values <- do.call(c, r_values_ls, quote=FALSE)
   nr <- length(r_values)
@@ -163,6 +163,7 @@ env_main_default <- function(x, digits=3, alternative=get_alternative(x)) {
         main <- paste(attr(x, "method"), " based on ", 100*(1-attr(x, "alpha")), "% central region (", attr(x, "type"), ")", sep="")
       else if(inherits(x, c("global_envelope")))
          main <- paste(100*(1-attr(x, "alpha")), "% central region (", attr(x, "type"), ")", sep="")
+      else main <- NULL
     }
   }
   main
@@ -222,7 +223,7 @@ env_dotplot <- function(x, main, ylim, xlab, ylab, color_outside = TRUE,
     nr <- length(x[['r']])
     if(is.null(labels)) labels <- paste(round(x[['r']], digits=2))
     if(missing(arrows.col)) arrows.col <- 1
-    if(nr > 10) warning("Dotplot style meant for low dimensional test vectors.\n")
+    if(nr > 10) warning("Dotplot style meant for low dimensional test vectors.")
     if(!add) graphics::plot(1:nr, x[['central']], main=main, ylim=ylim, xlab=xlab, ylab=ylab, cex=0.5, pch=16, xaxt="n", ...)
     else graphics::points(1:nr, x[['central']], main=main, ylim=ylim, xlab=xlab, ylab=ylab, cex=0.5, pch=16, xaxt="n", ...)
     if(get_alternative(x)!="greater")
@@ -257,10 +258,10 @@ env_dotplot_ggplot <- function(x, labels=NULL) {
   if(is.null(labels) && !is.null(x[['r']])) labels <- paste(round(x[['r']], digits=2))
   df <- as.data.frame(x)
   arrow <- arrow(angle=75)
-  ggplot(df) + geom_segment(aes(x=.data$r, y=.data$central, xend=.data$r, yend=.data$hi), arrow=arrow) +
-    geom_segment(aes(x=factor(.data$r), y=.data$central, xend=.data$r, yend=.data$lo), arrow=arrow) +
-    geom_point(aes(x=factor(.data$r), y=.data$obs, col=ifelse(.data$obs > .data$hi | .data$obs < .data$lo, "red", "black")), shape="x", size=5) +
-    geom_point(aes(x=factor(.data$r), y=.data$central)) +
+  g <- ggplot(df) + geom_segment(aes(x=.data$r, y=.data$central, xend=.data$r, yend=.data$hi), arrow=arrow) +
+    geom_segment(aes(x=factor(.data$r), y=.data$central, xend=.data$r, yend=.data$lo), arrow=arrow)
+  if(!is.null(x[['obs']])) g <- g + geom_point(aes(x=factor(.data$r), y=.data$obs, col=ifelse(.data$obs > .data$hi | .data$obs < .data$lo, "red", "black")), shape="x", size=5)
+  g <- g + geom_point(aes(x=factor(.data$r), y=.data$central)) +
     scale_color_identity() +
     scale_x_discrete(breaks=paste(x[['r']]), labels=labels)
 }
@@ -330,7 +331,7 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
         }
     }
     else {
-        if(Nfunc == 1) warning("The r-values are non-increasing in the given object. Splitting to several plots.\n")
+        if(Nfunc == 1) warning("The r-values are non-increasing in the given object. Splitting to several plots.")
         n_of_plots <- as.integer(1 + length(rdata$r_values_newstart_id))
         ncols_of_plots <- min(n_of_plots, max_ncols_of_plots)
         nrows_of_plots <- ceiling(n_of_plots / ncols_of_plots)
@@ -350,7 +351,7 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
                                  x[['hi']][tmp_indeces[i]:(tmp_indeces[i+1]-1)]))
           }
         }
-        if(length(main) != n_of_plots) { main <- NULL; cat("Note: \"main\" Ignored.\n") }
+        if(length(main) != n_of_plots) { main <- NULL; message("Note: \"main\" Ignored.") }
         if(!inherits(xlab, "list") && length(xlab) == 1) xlab <- rep(list(xlab), times=n_of_plots)
         if(!inherits(ylab, "list") && length(ylab) == 1) ylab <- rep(list(ylab), times=n_of_plots)
         if(!is.null(curve_sets)) {
@@ -427,6 +428,8 @@ env_basic_plot <- function(x, main, ylim, xlab, ylab, color_outside=TRUE,
 #' @importFrom ggplot2 guides
 #' @importFrom ggplot2 theme
 #' @importFrom ggplot2 geom_point
+#' @importFrom ggplot2 geom_text
+#' @importFrom utils tail
 env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
                        max_ncols_of_plots = 2,
                        labels = NULL, nticks = 5, curve_sets = NULL, x2 = NULL,
@@ -436,13 +439,13 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
     if(!is.null(x2)) {
       if(!inherits(x2, "list")) x2 <- list(x2)
       if(length(x) != length(x2)) {
-        warning("Unsuitable x2. Setting it to NULL.\n")
+        warning("Unsuitable x2. Setting it to NULL.")
         x2 <- NULL
       }
       else {
         for(i in 1:length(x)) {
-          if(!all(x[[i]][['r']] == x2[[i]][['r']])) stop("The two envelopes are for different r-values.\n")
-          if(!all(x[[i]][['central']] == x2[[i]][['central']])) warning("The two envelopes have different central functions!\n")
+          if(!all(x[[i]][['r']] == x2[[i]][['r']])) stop("The two envelopes are for different r-values.")
+          if(!all(x[[i]][['central']] == x2[[i]][['central']])) warning("The two envelopes have different central functions!")
         }
       }
       rdata <- combined_global_envelope_rhelper(x2, nticks=nticks)
@@ -458,15 +461,14 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
     linetype.values <- c('dashed', 'solid')
     size.values <- c(0.2, 0.2)
 
-    counter <- 0
-    outliers <- NULL
+    outliers <- outliers_id <- NULL
     if(!is.null(curve_sets)) {
       if(inherits(curve_sets, "list")) curve_sets <- combine_curve_sets(curve_sets, equalr=FALSE)
       funcs <- curve_set_funcs(curve_sets)
       for(j in 1:ncol(funcs)) {
         if(any(funcs[,j] < x[['lo']] | funcs[,j] > x[['hi']])) {
           outliers <- c(outliers, funcs[,j])
-          counter <- counter + 1
+          outliers_id <- c(outliers_id, j)
         }
       }
     }
@@ -523,10 +525,13 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
       )
       if(is.null(x[['obs']])) p <- p + ggplot2::guides(linetype = "none", size = "none")
       if(!is.null(outliers)) {
-        outliers.df <- data.frame(r = rep(x[['r']], times=counter),
+        outliers.df <- data.frame(r = rep(x[['r']], times=length(outliers_id)),
                                   curves = outliers,
-                                  id = rep(1:counter, each=length(x[['r']])))
-        p <- p + ggplot2::geom_line(data = outliers.df, ggplot2::aes_(x = ~r, y = ~curves, group = ~id))
+                                  id = rep(outliers_id, each=length(x[['r']])))
+        last_points <- outliers.df[outliers.df$r==max(outliers.df$r),]
+        extrasp <- (max(outliers.df$r)-min(outliers.df$r))/50
+        p <- p + ggplot2::geom_line(data = outliers.df, ggplot2::aes_(x = ~r, y = ~curves, group = ~id)) +
+          ggplot2::geom_text(data = last_points, ggplot2::aes_(x=~r+extrasp, y=~curves, label = ~id))
       }
       if(rdata$retick_xaxis) {
         p <- p + ggplot2::scale_x_continuous(name = xlab,
@@ -539,7 +544,7 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
       else p <- p + ggplot2::scale_x_continuous(name = xlab)
     }
     else {
-      if(Nfunc == 1) warning("The r-values are non-increasing in the given object. Splitting to several plots.\n")
+      if(Nfunc == 1) warning("The r-values are non-increasing in the given object. Splitting to several plots.")
       n_of_plots <- as.integer(1 + length(rdata$r_values_newstart_id))
       ncols_of_plots <- min(n_of_plots, max_ncols_of_plots)
       nrows_of_plots <- ceiling(n_of_plots / ncols_of_plots)
@@ -548,10 +553,10 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
         if(length(labels)==1) {
           labels <- paste(labels, " - ", 1:n_of_plots, sep="")
           warning(paste("Consider giving labels as a vector of length ", n_of_plots,
-                        " containing the label for each test function/vector used.\n", sep=""))
+                        " containing the label for each test function/vector used.", sep=""))
         }
         else {
-          warning("The length of the vector labels is unreasonable. Setting labels to empty.\n")
+          warning("The length of the vector labels is unreasonable. Setting labels to empty.")
           labels <- rep("", times=n_of_plots)
         }
       }
@@ -616,11 +621,14 @@ env_ggplot <- function(x, base_size, main, ylim, xlab, ylab,
       )
       if(is.null(x[['obs']])) p <- p + ggplot2::guides(linetype = "none", size = "none")
       if(!is.null(outliers)) {
-        outliers.df <- data.frame(r = rep(x[['r']], times=counter),
+        outliers.df <- data.frame(r = rep(x[['r']], times=length(outliers_id)),
                                   curves = outliers,
-                                  id = rep(1:counter, each=length(x[['r']])),
+                                  id = rep(outliers_id, each=length(x[['r']])),
                                   test_function = factor(func_labels, levels=labels))
-        p <- p + ggplot2::geom_line(data = outliers.df, ggplot2::aes_(x = ~r, y = ~curves, group = ~id))
+        last_points <- outliers.df[outliers.df$r==max(outliers.df$r),]
+        extrasp <- (max(outliers.df$r)-min(outliers.df$r))/50
+        p <- p + ggplot2::geom_line(data = outliers.df, ggplot2::aes_(x = ~r, y = ~curves, group = ~id)) +
+          ggplot2::geom_text(data = last_points, ggplot2::aes_(x=~r+extrasp, y=~curves, label = ~id))
       }
       p <- p + ggplot2::scale_x_continuous(name = xlab)
     }

@@ -13,12 +13,12 @@ funcs_from_X_and_funs <- function(X, nsim, testfuns=NULL, ...,
   if(nfuns < 1) nfuns <- 1
   for(i in 1:nfuns)
     if(any(names(extraargs) %in% names(testfuns[[i]])))
-      stop(paste("formal argument(s) \"", names(extraargs)[which(names(extraargs) %in% names(testfuns[[i]]))], "\" matched by multiple actual arguments\n", sep=""))
+      stop(paste("formal argument(s) \"", names(extraargs)[which(names(extraargs) %in% names(testfuns[[i]]))], "\" matched by multiple actual arguments.", sep=""))
 
   X.ls <- NULL
   # Simulations
   # Calculate the first test functions and generate simulations
-  X.ls[[1]] <- do.call(envelope, c(list(Y=X, nsim=nsim, simulate=NULL),
+  X.ls[[1]] <- do.call(spatstat::envelope, c(list(Y=X, nsim=nsim, simulate=NULL),
                                         testfuns[[1]],
                                         list(savefuns=TRUE, savepatterns=savepatterns, verbose=verbose),
                                         extraargs))
@@ -26,7 +26,7 @@ funcs_from_X_and_funs <- function(X, nsim, testfuns=NULL, ...,
   if(calc_funcs & nfuns > 1) {
     simpatterns <- attr(X.ls[[1]], "simpatterns")
     for(i in 2:nfuns) {
-      X.ls[[i]] <- do.call(envelope, c(list(Y=X, nsim=nsim, simulate=simpatterns),
+      X.ls[[i]] <- do.call(spatstat::envelope, c(list(Y=X, nsim=nsim, simulate=simpatterns),
                                             testfuns[[i]],
                                             list(savefuns=TRUE, savepatterns=FALSE, verbose=verbose),
                                             extraargs))
@@ -43,15 +43,12 @@ funcs_from_X_and_funs <- function(X, nsim, testfuns=NULL, ...,
 adj.simulate <- function(X, nsim = 499, nsimsub = nsim,
                          simfun=NULL, fitfun=NULL, calcfun=function(X) { X },
                          testfuns=NULL, ..., verbose=TRUE, mc.cores=1L) {
-  # Check if X is a (ppp) model object of spatstat
-  Xispppmodel <- is.ppm(X) || is.kppm(X) || is.lppm(X) || is.slrm(X)
-
   # Case 1: fitfun, simfun, calcfun provided
   # Model fitted by fitfun, simulated by simfun; X can be general
   if(!is.null(fitfun) & !is.null(simfun)) {
     message("Note: Model to be fitted by fitfun(X), simulations by simfun and calcfun;\n",
         "simfun should accept the object returned by fitfun as its argument.\n",
-        "calcfun should accept the object returned by simfun as its argument.\n")
+        "calcfun should accept the object returned by simfun as its argument.")
     # Fit the model to X
     simfun.arg <- fitfun(X) # fitted model to be passed to simfun
     # Generate nsim simulations by the given function using the fitted model
@@ -75,12 +72,14 @@ adj.simulate <- function(X, nsim = 499, nsimsub = nsim,
   # a) If X is a ppp object, the tested model is CSR
   # b) If X is a model object of spatstat, then spatstat is used for fitting and simulation.
   else {
-    if(!is.ppp(X) & !Xispppmodel) stop("fitfun or simfun not provided and X is not a ppp nor a fitted model object of spatstat.\n")
-    if(Xispppmodel) message("X is a fitted model object of spatstat;\n using spatstat to simulate the model and calculate the test functions.\n")
+    # Check if X is a (ppp) model object of spatstat
+    Xispppmodel <- spatstat::is.ppm(X) || spatstat::is.kppm(X) || spatstat::is.lppm(X) || spatstat::is.slrm(X)
+    if(!spatstat::is.ppp(X) & !Xispppmodel) stop("fitfun or simfun not provided and X is not a ppp nor a fitted model object of spatstat.")
+    if(Xispppmodel) message("X is a fitted model object of spatstat;\n using spatstat to simulate the model and calculate the test functions.")
     else
       message("Note: \'simfun\' and/or \'fitfun\' not provided and \'X\' is a ppp object of spatstat.\n",
           "The spatstat's function \'envelope\' is used for simulations and model fitting, \n",
-          "and CSR is tested (with intensity parameter).\n")
+          "and CSR is tested (with intensity parameter).")
     # Create simulated functions from the given model
     stage1_cset_ls <- funcs_from_X_and_funs(X, nsim=nsimsub, testfuns=testfuns, ...,
                                             savepatterns=FALSE, verbose=verbose, calc_funcs=TRUE)
@@ -222,7 +221,7 @@ adj.GET_helper <- function(curve_sets, type, alpha, alternative, ties, probs, Mr
 #' @param MrkvickaEtal2017 Logical. If TRUE, type is "st" or "qdir" and several test functions are used,
 #' then the combined scaled MAD envelope presented in Mrkvička et al. (2017) is calculated. Otherwise,
 #' the two-step procedure described in \code{\link{global_envelope_test}} is used for combining the tests.
-#' Default to FALSE. The option kept for historical reasons.
+#' Default to FALSE. The option is kept for historical reasons.
 #' @param mc.cores The number of cores to use, i.e. at most how many child processes will be run simultaneously.
 #' Must be at least one, and parallelization requires at least two cores. On a Windows computer mc.cores must be 1
 #' (no parallelization). For details, see \code{\link{mclapply}}, for which the argument is passed.
@@ -238,7 +237,7 @@ adj.GET_helper <- function(curve_sets, type, alpha, alternative, ties, probs, Mr
 #'
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 79: 381-404. doi: 10.1111/rssb.12172
 #'
-#' Myllymäki, M. and Mrkvička, T. (2019). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
+#' Myllymäki, M. and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 #'
 #' @seealso \code{\link{global_envelope_test}}, \code{\link{plot.global_envelope}}, \code{\link{saplings}}
 #' @export
@@ -381,17 +380,17 @@ GET.composite <- function(X, X.ls = NULL,
     X <- check_curve_set_dimensions(X)
     X.ls <- lapply(X.ls, FUN = check_curve_set_dimensions)
     # Check equality of dimensions over repetitions
-    if(!all(sapply(X.ls, FUN=function(curve_set) { identical(curve_set[[1]]$r, y=X[[1]]$r) }))) stop("The number of argument values in the observed and simulated sets of curves differ.\n")
-    if(!all(sapply(X.ls, FUN=function(curve_set) { curve_set_nfunc(curve_set[[1]]) == curve_set_nfunc(X[[1]]) }))) stop("The number of simulations in the observed and simulated sets of curves differ.\n")
+    if(!all(sapply(X.ls, FUN=function(curve_set) { identical(curve_set[[1]]$r, y=X[[1]]$r) }))) stop("The number of argument values in the observed and simulated sets of curves differ.")
+    if(!all(sapply(X.ls, FUN=function(curve_set) { curve_set_nfunc(curve_set[[1]]) == curve_set_nfunc(X[[1]]) }))) stop("The number of simulations in the observed and simulated sets of curves differ.")
     # Checking r_min, r_max
-    if(!is.null(r_min) & length(r_min) != length(X)) stop("r_min should give the minimum distances for each of the test functions.\n")
-    if(!is.null(r_max) & length(r_max) != length(X)) stop("r_max should give the maximum distances for each of the test functions.\n")
-    message("Using the simulations provided in X and X.ls.\n")
+    if(!is.null(r_min) & length(r_min) != length(X)) stop("r_min should give the minimum distances for each of the test functions.")
+    if(!is.null(r_max) & length(r_max) != length(X)) stop("r_max should give the maximum distances for each of the test functions.")
+    message("Using the simulations provided in X and X.ls.")
   }
   # 2) Simulations if X.ls not provided
   #------------------------------------
   else { # Perform simulations
-    if(verbose) message("Performing simulations, ...\n")
+    if(verbose) message("Performing simulations, ...")
     tmp <- adj.simulate(X=X, nsim=nsim, nsimsub=nsimsub,
                        simfun=simfun, fitfun=fitfun, calcfun=calcfun, testfuns=testfuns, ...,
                        verbose=verbose, mc.cores=mc.cores)
@@ -440,13 +439,13 @@ GET.composite <- function(X, X.ls = NULL,
     #-- The rank test at the second level
     # Calculate the critical rank / alpha
     kalpha_star <- quantile(stats, probs=alpha, type=1)
-    data_and_sim_curves <- data_and_sim_curves(attr(res, "level2_curve_set")) # the second step "curves"
-    nr <- ncol(data_and_sim_curves)
-    Nfunc <- nrow(data_and_sim_curves)
+    all_curves <- data_and_sim_curves(attr(res, "level2_curve_set")) # the second step "curves"
+    nr <- ncol(all_curves)
+    Nfunc <- nrow(all_curves)
     LB <- array(0, nr)
     UB <- array(0, nr)
     for(i in 1:nr){
-      Hod <- sort(data_and_sim_curves[,i])
+      Hod <- sort(all_curves[,i])
       LB[i]<- Hod[kalpha_star]
       UB[i]<- Hod[Nfunc-kalpha_star+1]
     }
@@ -470,13 +469,13 @@ GET.composite <- function(X, X.ls = NULL,
     if(type == "rank" & nfuns == 1) {
       # Calculate the critical rank (instead of alpha) and the adjusted envelope following Myllymäki et al. (2017)
       kalpha_star <- quantile(stats, probs=alpha, type=1)
-      data_and_sim_curves <- data_and_sim_curves(X[[1]]) # all the functions
+      all_curves <- data_and_sim_curves(X[[1]]) # all the functions
       nr <- length(X[[1]]$r)
-      Nfunc <- nrow(data_and_sim_curves)
+      Nfunc <- nrow(all_curves)
       LB <- array(0, nr)
       UB <- array(0, nr)
       for(i in 1:nr){
-        Hod <- sort(data_and_sim_curves[,i])
+        Hod <- sort(all_curves[,i])
         LB[i]<- Hod[kalpha_star]
         UB[i]<- Hod[Nfunc-kalpha_star+1]
       }

@@ -62,9 +62,9 @@ The test vector is
 where \eqn{F(r_i)}{F(r_i)} stands for the F-statistic. The simulations are performed by
 permuting the test functions. Further details can be found in Mrkvička et al. (2016).
 
-The argument \code{equalvar=TRUE} means that equal variances across groups are assumed.
+The argument \code{variances="equal"} means that equal variances across groups are assumed.
 The correction for unequal variances can be done by using the corrected F-statistic
-(option \code{equalvar=FALSE}).
+(option \code{variances="unequal"}).
 
 Unfortunately this test is not able to detect which groups are different from each other.
 }
@@ -83,7 +83,5 @@ plot(res2)
 plot(res2, fixedscales=FALSE)
 }
 \references{
-Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2018)
-A one-way ANOVA test for functional data with graphical interpretation.
-arXiv:1612.03608 [stat.ME] (http://arxiv.org/abs/1612.03608)
+Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 }

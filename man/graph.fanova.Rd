@@ -30,7 +30,7 @@ the observed functions in the component \code{obs}.}
 \item{groups}{The original groups (a factor vector representing the assignment to groups).}
 
 \item{variances}{Either "equal" or "unequal". If "unequal", then correction for unequal variances
-as explained in details will be done.}
+as explained in details will be done. Only relevant for the case \code{test.equality = "means"} (default).}
 
 \item{contrasts}{Logical. FALSE and TRUE specify the two test functions as described in
 description part of this help file.}
@@ -39,7 +39,8 @@ description part of this help file.}
 by appying moving average to the estimated sample variances. n.aver determines
 how many values on each side do contribute (incl. value itself).}
 
-\item{mirror}{The complement of the argument circular of \code{\link[stats]{filter}}.}
+\item{mirror}{The complement of the argument circular of \code{\link[stats]{filter}}. Another parameter
+for the moving average to estimate sample variances (see \code{n.aver}).}
 
 \item{savefuns}{Logical. If TRUE, then the functions from permutations are saved to the attribute
 simfuns.}
@@ -64,8 +65,8 @@ see \code{test.equality}.}
 One-way ANOVA tests for functional data with graphical interpretation
 }
 \details{
-This functions can be used to perform one-way graphical functional ANOVA tests described
-in Mrkvička et al. (2016). Both 1d and 2d functions are allowed in curve sets.
+This function can be used to perform one-way graphical functional ANOVA tests described
+in Mrkvička et al. (2020). Both 1d and 2d functions are allowed in curve sets.
 
 The tests assume that there are \eqn{J}{J} groups which contain
 \eqn{n_1,\dots,n_J}{n1, ..., nJ} functions
@@ -193,15 +194,11 @@ res.c <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
 plot(res.c)
 }
 \references{
-Mrkvička, T., Hahn, U. and Myllymäki, M.
-A one-way ANOVA test for functional data with graphical interpretation.
-arXiv:1612.03608 [stat.ME] (http://arxiv.org/abs/1612.03608)
+Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 
-Mrkvička, T., Myllymäki, M., and Hahn, U. (2017).
-Multiple Monte Carlo testing, with applications in spatial point processes.
-Statistics and Computing 27 (5): 1239-1255. doi:10.1007/s11222-016-9683-9
+Mrkvička, T., Myllymäki, M., and Hahn, U. (2017). Multiple Monte Carlo testing, with applications in spatial point processes. Statistics and Computing 27 (5): 1239-1255. doi:10.1007/s11222-016-9683-9
 
-Myllymäki, M and Mrkvička, T. (2019). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
+Myllymäki, M and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 }
 \seealso{
 \code{\link{frank.fanova}}

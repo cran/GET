@@ -2,7 +2,6 @@
 % Please edit documentation in R/envelopes.r
 \name{global_envelope_test}
 \alias{global_envelope_test}
-\alias{GET}
 \alias{global_envelope_test2d}
 \title{Global envelope test}
 \usage{
@@ -64,20 +63,16 @@ is provided. 2 (default) for a two-step combining procedure, 1 for one-step.}
 \item{...}{Additional parameters to be passed to \code{\link{central_region}}.}
 }
 \value{
-Either an object of class "global_envelope" and "fv"
-(see \code{\link[spatstat]{fv.object}}) or "combined_global_envelope" for
-combined tests. The objects can be printed and plotted directly.
+Either an object of class "global_envelope" or "combined_global_envelope"
+(the latter for combined tests). The objects can be printed and plotted directly.
 
 The "global_envelope" is essentially a data frame containing columns
 \itemize{
-\item r = the vector of values of the argument r at which the test was made
-\item obs = values of the data function
-\item lo = the lower envelope based on the simulated functions
-\item hi = the upper envelope based on the simulated functions
-\item central = If the curve_set (or envelope object) contains a component 'theo',
-      then this function is used as the central curve and returned in this component.
-      Otherwise, the central_curve is the mean of the test functions T_i(r), i=2, ..., s+1.
-      Used for visualization only.
+\item the values of the argument r at which the test was made, copied from the argument \code{curve_sets} with the corresponding names
+\item obs = values of the data function, copied from the argument \code{curve_sets}; missing if more than one observed function
+\item lo = the lower envelope
+\item hi = the upper envelope
+\item central = a central curve as specified in the argument \code{central}.
 }
 Moreover, the return value has the same attributes as the object returned by
 \code{\link{central_region}} and in addition
@@ -138,8 +133,8 @@ envelopes with intrinsic graphical interpretation.
   \item "unscaled", the unscaled envelope (providing a baseline) that has a contant width and
   that corresponds to the classical maximum deviation test (Ripley, 1981).
 }
-See \code{\link{forder}} and \code{\link{central_region}} and the references
-for more detailed description of the measures and the corresponding envelopes.
+See Myllymäki and Mrkvička (2020, Section 2.) for more detailed description of the measures and
+the corresponding envelopes.
 
 The first four types are global rank envelopes.
 The \code{'rank'} envelope test is a completely non-parametric test,
@@ -168,8 +163,7 @@ The options are
 \item 'st': the studentized MAD measure (Myllymäki et al., 2015, 2017)
 \item 'unscaled': the unscaled MAD measure (Ripley, 1981)
 }
-See more detailed description of the envelopes and measures in \code{\link{central_region}}
-and \code{\link{forder}}.
+See more detailed description of the envelopes and measures in Myllymäki and Mrkvička (2020, Section 2.).
 }
 
 \section{Global envelope}{
@@ -196,7 +190,8 @@ The same is done for other measures, the p-value always being correspondent to t
 
 For the global \code{"rank"} envelope test, Myllymäki et al. (2017) recommended to use
 at least 2500 simulations for testing at the significance level alpha = 0.05 for single
-function tests, based on experiments with summary functions for point processes.
+function tests, based on experiments with summary functions for point processes evaluated
+approximately at 500 argument values.
 In this case, the width of the p-interval associated with the extreme rank measure tended
 to be smaller than 0.01.
 The tests \code{'erl'}, \code{'cont'} and \code{'area'}, similarly as
@@ -294,33 +289,6 @@ if(require("spatstat", quietly=TRUE)) {
   # 4) Plot the test result
   plot(res, ylab=expression(italic(L[mm](r)-L(r))))
 
-  # Goodness-of-fit test (typically conservative, see ?GET.composite for adjusted tests)
-  #=====================
-  X <- unmark(spruces)
-  # Minimum distance between points in the pattern
-  min(nndist(X))
-  # Fit a model
-  fittedmodel <- ppm(X, interaction=Hardcore(hc=1)) # Hardcore process
-
-  # Simulating Gibbs process by 'envelope' is slow, because it uses the MCMC algorithm
-  #env <- envelope(fittedmodel, fun="Jest", nsim=999, savefuns=TRUE,
-  #                correction="none", r=seq(0, 4, length=500))
-
-  # Using direct algorihm can be faster, because the perfect simulation is used here.
-  simulations <- NULL
-  nsim <- 999 # Number of simulations
-  for(j in 1:nsim) {
-     simulations[[j]] <- rHardcore(beta=exp(fittedmodel$coef[1]),
-                                   R=fittedmodel$interaction$par$hc,
-                                   W=X$window)
-     if(j\%\%10==0) cat(j, "...", sep="")
-  }
-  env <- envelope(X, simulate=simulations, fun="Jest", nsim=length(simulations),
-                  savefuns=TRUE, correction="none", r=seq(0, 4, length=500))
-  curve_set <- crop_curves(env, r_min=1, r_max=3.5)
-  res <- global_envelope_test(curve_set, type="erl"); plot(res, ylab=expression(italic(J(r))))
-  }
-
   # A combined global envelope test
   #================================
   # As an example test CSR of the saplings point pattern by means of
@@ -370,6 +338,7 @@ if(require("spatstat", quietly=TRUE)) {
   res <- global_envelope_test(curve_sets=list(curve_set_L, curve_set_F,
                                               curve_set_G, curve_set_J))
   plot(res, labels=c("L(r)-r", "F(r)", "G(r)", "J(r)"))
+  }
 }
 
 # A test based on a low dimensional random vector
@@ -394,63 +363,11 @@ if(requireNamespace("mvtnorm", quietly=TRUE)) {
   res2 <- global_envelope_test(cset2)
   plot(res2)
 }
-
-# Examples with image sets
-
-# Example of spatial point pattern residuals
-#===========================================
-if(require("spatstat", quietly=TRUE)) {
-  data(cells)
-  X <- cells
-  # Fit the hard-core process
-  model <- ppm(X, interaction=Hardcore())
-  summary(model)
-  HD <- 0.08168525 # Hard-core process
-  # Choose a bandwitdh by Scott's rule of thumb
-  ds <- bw.scott(X); ds
-  # Calculate raw residuals of the fitted model
-  # (To use the default pixel array dimensions remove dimyx, see ?as.mask)
-  u <- diagnose.ppm(model, type="raw", rbord = HD, which ="smooth",
-                    sigma=ds, plot.it=FALSE, dimyx=32)
-  obs <- u$smooth$Z$v
-  # Generate simulations from the hard-core null model
-  \dontshow{nsim <- 19}
-  \donttest{nsim <- 499 # Number of simulations; increase for serious analysis!}
-  simulations <- NULL
-  ext.factor <- max(X$window$xrange[2]-X$window$xrange[1],
-                    X$window$yrange[2]-X$window$yrange[1]) / 10
-  win.extend <- owin(c(X$window$xrange[1]-ext.factor, X$window$xrange[2]+ext.factor),
-                     c(X$window$yrange[1]-ext.factor, X$window$yrange[2]+ext.factor))
-  mod02 <- list(cif="hardcore", par=list(beta=exp(model$fitin$coefs[1]),hc=HD), w=win.extend)
-  # starting point pattern in an extended window
-  x.start <- runifpoint(X$n, win=win.extend)
-  # simulations
-  for(sss in 1:nsim){
-    uppp <- rmh(model=mod02, start=list(x.start=x.start), control=list(p=1,nrep=1e5,nverb=5000))
-    f <- uppp$x > X$window$xrange[1] & uppp$x < X$window$xrange[2] &
-         uppp$y > X$window$yrange[1] & uppp$y < X$window$yrange[2]
-    simulations[[sss]] <- ppp(uppp$x[f], uppp$y[f], window=X$window)
-  }
-  # Calculate the raw residuals for simulations
-  sim <- array(0, c(u$smooth$Z$dim, nsim))
-  for(i in 1:length(simulations)) {
-    model <- ppm(simulations[[i]],interaction=Hardcore(HD));
-    u_sim <- diagnose.ppm(model, type="raw", rbord = HD, which ="smooth",
-                          sigma=ds, plot.it=FALSE, dimyx=32)
-    sim[,,i] <- u_sim$smooth$Z$v
-    if((i \%\% 100)==0) cat(i, ' ')
-  }
-  # Constract the global envelope test for the (2D) raw residuals
-  iset <- create_image_set(list(obs=obs, sim_m=sim))
-  res <- global_envelope_test(iset, type="area")
-  plot(res)
-  plot(res) + ggplot2::scale_fill_gradient(low="black", high="white")
-}
 }
 \references{
 Mrkvička, T., Myllymäki, M. and Hahn, U. (2017). Multiple Monte Carlo testing, with applications in spatial point processes. Statistics & Computing 27 (5): 1239-1255. doi: 10.1007/s11222-016-9683-9
 
-Mrkvička, T., Myllymäki, M., Jilek, M., and Hahn, U. (2018). A one-way ANOVA test for functional data with graphical interpretation. arXiv:1612.03608 [stat.ME]
+Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 
 Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 
@@ -458,7 +375,7 @@ Myllymäki, M., Grabarnik, P., Seijo, H. and Stoyan. D. (2015). Deviation test c
 
 Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology), 79: 381–404. doi: 10.1111/rssb.12172
 
-Myllymäki, M., Mrkvička, T. Global envelopes in R.
+Myllymäki, M. and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 
 Ripley, B.D. (1981). Spatial statistics. Wiley, New Jersey.
 }

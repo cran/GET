@@ -98,8 +98,8 @@ Fvalues <- function(x, groups) {
   ni <- groupn(groups)
   n <- sum(ni)
   k <- nlevels(groups)
-  total <- apply(x^2, 2, sum) - apply(x, 2, sum)^2 / n
-  within <- apply( groupSXX(x, groups) - groupSX(x, groups)^2/ni, 2, sum)
+  total <- colSums(x^2) - colSums(x)^2 / n
+  within <- colSums( groupSXX(x, groups) - groupSX(x, groups)^2/ni )
   (total / within - 1) / (k - 1) * (n-k)
 }
 
@@ -150,8 +150,8 @@ contrasts.m <- function(x, groups, ...) {
 #' One-way ANOVA tests for functional data with graphical interpretation
 #'
 #'
-#' This functions can be used to perform one-way graphical functional ANOVA tests described
-#' in Mrkvička et al. (2016). Both 1d and 2d functions are allowed in curve sets.
+#' This function can be used to perform one-way graphical functional ANOVA tests described
+#' in Mrkvička et al. (2020). Both 1d and 2d functions are allowed in curve sets.
 #'
 #' The tests assume that there are \eqn{J}{J} groups which contain
 #' \eqn{n_1,\dots,n_J}{n1, ..., nJ} functions
@@ -192,7 +192,7 @@ contrasts.m <- function(x, groups, ...) {
 #' the observed functions in the component \code{obs}.
 #' @param groups The original groups (a factor vector representing the assignment to groups).
 #' @param variances Either "equal" or "unequal". If "unequal", then correction for unequal variances
-#' as explained in details will be done.
+#' as explained in details will be done. Only relevant for the case \code{test.equality = "means"} (default).
 #' @param contrasts Logical. FALSE and TRUE specify the two test functions as described in
 #' description part of this help file.
 # Note: Possibly add a some arguments to specify which contrasts should be used.
@@ -200,7 +200,8 @@ contrasts.m <- function(x, groups, ...) {
 #' @param n.aver If variances = "unequal", there is a possibility to use variances smoothed
 #' by appying moving average to the estimated sample variances. n.aver determines
 #' how many values on each side do contribute (incl. value itself).
-#' @param mirror The complement of the argument circular of \code{\link[stats]{filter}}.
+#' @param mirror The complement of the argument circular of \code{\link[stats]{filter}}. Another parameter
+#' for the moving average to estimate sample variances (see \code{n.aver}).
 #' @param savefuns Logical. If TRUE, then the functions from permutations are saved to the attribute
 #' simfuns.
 #' @param test.equality A character with possible values \code{mean} (default), \code{var} and
@@ -220,15 +221,11 @@ contrasts.m <- function(x, groups, ...) {
 #' @aliases graph.fanova2d
 #' @seealso \code{\link{frank.fanova}}
 #' @references
-#' Mrkvička, T., Hahn, U. and Myllymäki, M.
-#' A one-way ANOVA test for functional data with graphical interpretation.
-#' arXiv:1612.03608 [stat.ME] (http://arxiv.org/abs/1612.03608)
+#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #'
-#' Mrkvička, T., Myllymäki, M., and Hahn, U. (2017).
-#' Multiple Monte Carlo testing, with applications in spatial point processes.
-#' Statistics and Computing 27 (5): 1239-1255. doi:10.1007/s11222-016-9683-9
+#' Mrkvička, T., Myllymäki, M., and Hahn, U. (2017). Multiple Monte Carlo testing, with applications in spatial point processes. Statistics and Computing 27 (5): 1239-1255. doi:10.1007/s11222-016-9683-9
 #'
-#' Myllymäki, M and Mrkvička, T. (2019). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
+#' Myllymäki, M and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 #' @examples
 #' #-- NOx levels example (see for details Myllymaki and Mrkvicka, 2019)
 #' if(require("fda.usc", quietly=TRUE)) {
@@ -325,14 +322,14 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
                          contrasts = FALSE,
                          n.aver = 1L, mirror = FALSE, savefuns=FALSE,
                          test.equality = c("mean", "var", "cov"), cov.lag = 1, ...) {
-  if(nsim < 1) stop("Not a reasonable value of nsim.\n")
-  if(!inherits(curve_set, c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
+  if(nsim < 1) stop("Not a reasonable value of nsim.")
+  if(!inherits(curve_set, c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.")
   curve_set <- convert_fdata(curve_set)
-  if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.\n")
+  if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.")
   x <- data_and_sim_curves(curve_set)
-  if(nrow(x) != length(groups)) stop("The length of groups should be equal with the number of functions.\n")
+  if(nrow(x) != length(groups)) stop("The length of groups should be equal with the number of functions.")
   if(!is.factor(groups)) {
-    warning("The argument groups is not a factor. Transforming it to a factor by as.factor.\n")
+    warning("The argument groups is not a factor. Transforming it to a factor by as.factor.")
     groups <- as.factor(groups)
   }
   test.equality <- match.arg(test.equality)
@@ -342,7 +339,7 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
   r <- curve_set[['r']]
   switch(test.equality,
          "mean" = {
-           if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.\n")
+           if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.")
            if(variances == "unequal") x <- corrUnequalVar(x, groups, n.aver, mirror)
          },
          "var" = {
@@ -396,9 +393,9 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' where \eqn{F(r_i)}{F(r_i)} stands for the F-statistic. The simulations are performed by
 #' permuting the test functions. Further details can be found in Mrkvička et al. (2016).
 #'
-#' The argument \code{equalvar=TRUE} means that equal variances across groups are assumed.
+#' The argument \code{variances="equal"} means that equal variances across groups are assumed.
 #' The correction for unequal variances can be done by using the corrected F-statistic
-#' (option \code{equalvar=FALSE}).
+#' (option \code{variances="unequal"}).
 #'
 #' Unfortunately this test is not able to detect which groups are different from each other.
 #'
@@ -409,9 +406,7 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' @aliases frank.fanova2d
 #' @export
 #' @references
-#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2018)
-#' A one-way ANOVA test for functional data with graphical interpretation.
-#' arXiv:1612.03608 [stat.ME] (http://arxiv.org/abs/1612.03608)
+#' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #' @examples
 #' data(rimov)
 #' groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
@@ -427,14 +422,14 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' plot(res2, fixedscales=FALSE)
 frank.fanova <- function(nsim, curve_set, groups, variances="equal",
                          test.equality = c("mean", "var", "cov"), cov.lag = 1, ...) {
-  if(nsim < 1) stop("Not a reasonable value of nsim.\n")
-  if(!inherits(curve_set, c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.\n")
+  if(nsim < 1) stop("Not a reasonable value of nsim.")
+  if(!inherits(curve_set, c("curve_set", "fdata"))) stop("The curve_set does not have a valid class.")
   curve_set <- convert_fdata(curve_set)
-  if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.\n")
+  if(curve_set_is1obs(curve_set)) stop("All (data) functions of the curve_set must be equal.")
   x <- data_and_sim_curves(curve_set)
-  if(nrow(x) != length(groups)) stop("The length of groups should be equal with the number of functions.\n")
+  if(nrow(x) != length(groups)) stop("The length of groups should be equal with the number of functions.")
   if(!is.factor(groups)) {
-    warning("The argument groups is not a factor. Transforming it to a factor by as.factor.\n")
+    warning("The argument groups is not a factor. Transforming it to a factor by as.factor.")
     groups <- as.factor(groups)
   }
   test.equality <- match.arg(test.equality)
@@ -444,7 +439,7 @@ frank.fanova <- function(nsim, curve_set, groups, variances="equal",
   r <- curve_set[['r']]
   switch(test.equality,
          "mean" = {
-           if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.\n")
+           if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.")
            if(variances == "equal") fun <- Fvalues
            else fun <- corrFvalues
          },

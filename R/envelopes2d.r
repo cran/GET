@@ -99,7 +99,7 @@ plot_combined_global_envelope2d_fixedscales <- function(x, what=c("obs", "hi", "
 #' Observed (\code{"obs"}), upper envelope (\code{"hi"}), lower envelope (\code{"lo"}),
 #' observed with significantly higher values highlighted (\code{"hi.sign"}),
 #' observed with significantly lower values highlighted (\code{"lo.sign"}).
-#' @param transparency A number between 0 and 1 (default 85/255, 33% transparency).
+#' @param transparency A number between 0 and 1 (default 155/255, 60% transparency).
 #' Similar to alpha of \code{\link[grDevices]{rgb}}. Used in plotting the significant regions for 2d
 #' functions.
 #' @param ... Ignored.
@@ -108,18 +108,18 @@ plot_combined_global_envelope2d_fixedscales <- function(x, what=c("obs", "hi", "
 #' @importFrom gridExtra grid.arrange
 #' @export
 plot.global_envelope2d <- function(x, fixedscales = TRUE, main,
-                                   what=c("obs", "hi", "lo", "hi.sign", "lo.sign"),
-                                   sign.col = "red", transparency = 85/255,
-                                   digits = 3, ...) {
+                                   what=c("obs", "lo", "hi", "lo.sign", "hi.sign"),
+                                   sign.col = "red", transparency = 155/255,
+                                   digits = 3, base_size = 11, ...) {
   what <- match.arg(what, several.ok = TRUE)
   what <- checkarg_envelope2d_what(x, what)
   if(missing('main')) main <- env_main_default(x, digits=digits)
 
   if(fixedscales) {
     g <- plot_global_envelope2d_fixedscales(x, what, sign.col, transparency)
-    g + ggtitle(main)
+    g + ggtitle(main) + ThemePlain2d(base_size=base_size)
   } else {
-    gs <- lapply(what, function(w) plot_global_envelope2d_fixedscales(x, w, sign.col, transparency))
+    gs <- lapply(what, function(w) { plot_global_envelope2d_fixedscales(x, w, sign.col, transparency) + ThemePlain2d(base_size=base_size) })
     grid.arrange(grobs=gs, nrow=ceiling(length(gs)/3), top=main)
   }
 }
@@ -168,9 +168,9 @@ plot.global_envelope2d <- function(x, fixedscales = TRUE, main,
 #'   gridExtra::grid.arrange(grobs=t(gs))
 #' }
 plot.combined_global_envelope2d <- function(x, fixedscales = 2, main,
-                                            what=c("obs", "hi", "lo", "hi.sign", "lo.sign"),
-                                            sign.col = "red", transparency = 85/255,
-                                            digits = 3, ...) {
+                                            what=c("obs", "lo", "hi", "lo.sign", "hi.sign"),
+                                            sign.col = "red", transparency = 155/255,
+                                            digits = 3, base_size = 11, ...) {
   what <- match.arg(what, several.ok = TRUE)
   what <- checkarg_envelope2d_what(x[[1]], what)
   if(missing('main')) {
@@ -180,13 +180,13 @@ plot.combined_global_envelope2d <- function(x, fixedscales = 2, main,
 
   if(fixedscales==2) {
     g <- plot_combined_global_envelope2d_fixedscales(x, what, sign.col, transparency)
-    g + ggtitle(main)
+    g + ggtitle(main) + ThemePlain2d(base_size=base_size)
   } else if(fixedscales==1) {
     gs <- lapply(seq_along(x), function(i) {
       env <- x[[i]]
       env$main <- names(x)[i]
       g <- plot_global_envelope2d_fixedscales(env, what, sign.col, transparency)
-      g + facet_grid(main~label)
+      g + facet_grid(main~label) + ThemePlain2d(base_size=base_size)
     })
     grid.arrange(grobs=gs, ncol=1, top=main)
   } else if(fixedscales==0) {
@@ -194,7 +194,7 @@ plot.combined_global_envelope2d <- function(x, fixedscales = 2, main,
       env$main <- main
       g <- plot_global_envelope2d_fixedscales(env, what, sign.col, transparency)
       g + facet_wrap(c("main", "label"), labeller=function(l) label_value(l, multi_line = FALSE))
-      g + theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+      g + ThemePlain2d(base_size=base_size) + theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
     }
     gs <- outer(what, seq_along(x), FUN=Vectorize(function(w, i) {
       list(f(x[[i]], names(x)[i], w))
