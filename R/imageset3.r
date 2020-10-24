@@ -1,6 +1,6 @@
 #' A simulated set of images
 #'
-#' A simulated set of images with a categorical factor
+#' A simulated set of images with a categorical factor (with three levels)
 #'
 #'
 #' We considered a categorical factor \code{Group} obtaining the values 0, 1 or 2
@@ -14,6 +14,7 @@
 #' \deqn{\epsilon(r) = \mathbf{1}(\|r\| \leq 0.5) G(r) + \mathbf{1}(\|r\| > 0.5) \frac{1}{2}G(r)^{1/5},}{e(r) = 1(||r|| <= 0.5) G(r) + 1(||r|| > 0.5) 0.5 G(r)^{1/5},}
 #' where G(r) is a Gaussian random field with the exponential correlation structure
 #' with scale parameter 0.15 and standard deviation 0.2.
+#' Consequently, the first two groups (0,1) have the same mean, while a bigger bump appears in the third group (2) in the middle of the image.
 #' @format A list of the \code{image_set} containing the simulated images, and
 #' the discrete group factor in the list component \code{Group}.
 #'
@@ -21,13 +22,12 @@
 #' @references
 #' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #' @keywords datasets
-#' @keywords curves
 #' @name imageset3
 #' @docType data
 #' @seealso \code{\link{graph.fanova}}, \code{\link{frank.fanova}}
 #' @examples
 #' \donttest{
 #' data(imageset3)
-#' plot(imageset3$image_set, idx=c(1:5, 11:15, 21:25), max_ncols_of_plots = 5)
+#' plot(imageset3$image_set, idx=c(1:5, 11:15, 21:25), ncol = 5)
 #' }
 NULL

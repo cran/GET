@@ -2,7 +2,6 @@
 % Please edit documentation in R/graphfanova.r
 \name{graph.fanova}
 \alias{graph.fanova}
-\alias{graph.fanova2d}
 \title{One-way graphical functional ANOVA}
 \usage{
 graph.fanova(
@@ -54,7 +53,7 @@ If \code{cov}, then the equality of lag \code{cov.lag} covariance is tested by p
 \deqn{W_{ij}(r) = \sqrt{|V_{ij}(r)|\cdot sign(V_{ij}(r))},}{|V_{ij}(r)| sign(V_{ij}(r)),}
 where
 \deqn{V_{ij}(r) = (T_{ij}(r) - \bar{T}_j(r))((T_{ij}(r+s) - \bar{T}_j(r+s))).}{V_{ij}(r) = (T_{ij}(r) - \bar{T}_j(r))((T_{ij}(r+s) - \bar{T}_j(r+s))).}
-See Mrkvicka et al. (2018) for more details.}
+See Mrkvicka et al. (2020) for more details.}
 
 \item{cov.lag}{The lag of the covariance for testing the equality of covariances,
 see \code{test.equality}.}
@@ -77,21 +76,22 @@ The tests assume that \eqn{T_{ij}, i=1,...,n_j}{T_{ij}, i=1,...,n_j} is an iid s
 a stochastic process with mean function \eqn{\mu_j}{\mu_j} and
 covariance function \eqn{\gamma_j(s,t)}{\gamma_j(s,t)} for s,t in R and j = 1,..., J.
 
-If you want to test the hypothesis
-\deqn{H_0 : \mu_j(r) \equiv 0, j=1, \dots , J,}{H0: \mu_j(r) = 0, j=1,...,J,}
-then you should use the test function
+To test the hypothesis
+\deqn{H_0 : \mu_1(r) \equiv \mu_2(r)\equiv \dots \equiv \mu_J(r),}{H0: \mu_1(r) = \mu_2(r) = ... = \mu_J(r),}
+you can use the test function
 \deqn{\mathbf{T} = (\overline{T}_1({\bf r}), \overline{T}_2({\bf r}), \dots , \overline{T}_J({\bf r}))}{T = (\bar{T}_1(r), \bar{T}_2(r), ..., \bar{T}_J(r))}
 where \eqn{\overline{T}_i({\bf r})}{\bar{T}_i(r)} is a vector of mean values of functions in the group j.
 This test function is used when \code{contrasts = FALSE} (default).
 
-An alternative is to test the equivalent hypothesis
+The hypothesis can equivalently be written as
 \deqn{H_0 : \mu_i(r) - \mu_j(r) = 0, i=1,\dots,J-1, j=1,\dots,J.}{H0: \mu_i(r) - \mu_j(r) = 0, i=1,...,J-1, j=i,...,J.}
-This test corresponds to the post-hoc test done usually after an ANOVA test is significant, but
-it can be directed tested by mean of the combined rank test (Mrkvička et al., 2017), if the
-test vector is taken to consist of the differences of the group averages of test functions, namely
+and, alternatively, one can use the test function (vector)
+taken to consist of the differences of the group averages,
 \deqn{\mathbf{T'} = (\overline{T}_1({\bf r})-\overline{T}_2({\bf r}),
 \overline{T}_1({\bf r})-\overline{T}_3({\bf r}), \dots , \overline{T}_{J-1}({\bf r})-\overline{T}_J({\bf r})).}{T' = (\bar{T}_1(r)-\bar{T}_2(r), \bar{T}_1(r)-\bar{T}_3(r), ..., \bar{T}_{J-1}(r)-\bar{T}_J(r)).}
-With the option \code{contrasts = TRUE} the test will be based on this test vector.
+The choice is available with the option \code{contrasts = TRUE}.
+This test corresponds to the post-hoc test done usually after an ANOVA test is significant, but
+it can be directed tested by means of the combined rank test (Mrkvička et al., 2017) with this test vector.
 
 The test as such assumes that the variances are equal across the groups of functions. To deal with
 unequal variances, the differences are rescaled as the first step as follows
@@ -181,15 +181,15 @@ plot(res2, ncol=3,
      ylab=expression(italic(bar(T)[i](r)-bar(T)[j](r))))
 
 # Image set examples
-data("imageset1")
+data("imageset3")
 res <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
-                    curve_set = imageset1$image_set,
-                    groups = imageset1$Group)
+                    curve_set = imageset3$image_set,
+                    groups = imageset3$Group)
 plot(res)
 # Contrasts
 res.c <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
-                      curve_set = imageset1$image_set,
-                      groups = imageset1$Group,
+                      curve_set = imageset3$image_set,
+                      groups = imageset3$Group,
                       contrasts = TRUE)
 plot(res.c)
 }

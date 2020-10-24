@@ -1,18 +1,10 @@
-# Check that formula.reduced is nested within formula.full and includes something extra.
-check_isnested <- function(formula.full, formula.reduced) {
-  # Check that the reduced model is nested within the full model
-  if(!all(labels(terms(formula.reduced)) %in% labels(terms(formula.full)))) stop("The reduced model includes some extra variables, not in the full model.")
-  if(attr(terms(formula.full), "intercept") < attr(terms(formula.reduced), "intercept")) stop("The reduced model includes intercept, but the full model does not.")
-  # Check that the full model includes something in addition to the reduced model
-  if(all(labels(terms(formula.full)) %in% labels(terms(formula.reduced)))) stop("The full model should not be equal to the reduced model.")
-}
-
 # Preliminary checks for the graph.flm and frank.flm
 #' @importFrom stats terms
 flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors = NULL, fast = TRUE) {
   # Preliminary checks
   vars <- all.vars(formula.full)
   vars.reduced <- all.vars(formula.reduced)
+  # Check that formula.reduced is nested within formula.full
   check_isnested(formula.full, formula.reduced)
   if(nsim < 1) stop("Not a reasonable value of nsim.")
   if(vars[1] != "Y") stop("The formula should be off the form Y ~ .... where Y is the response.")
@@ -48,7 +40,9 @@ flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors 
     # Expand the factors to each argument value
     for(i in 1:length(vars.factors)) {
       data.l[[vars.factors[i]]] <- if(factors_in_curvesets) {
-        matrix(factors[,vars.factors[i]], nrow=nrow(factors), ncol=nr)
+        A <- rep(factors[,vars.factors[i]], times=nr)
+        dim(A) <- c(nrow(factors), nr)
+        A
       } else { factors[,vars.factors[i]] }
     }
   }
@@ -262,7 +256,8 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' Non-parametric graphical tests of significance in functional general linear model (GLM)
 #'
 #'
-#' The function \code{graph.flm} performs the graphical functional GLM of Mrkvička et al. (2019).
+#' The function \code{graph.flm} performs the graphical functional GLM of Mrkvička et al. (2019),
+#' described also in Section 3.6 of Myllymäki and Mrkvička (2020) (type \code{vignette("GET")} in R).
 #' This is a nonparametric graphical test of significance of a covariate in functional GLM.
 #' The test is able to find not only if the factor of interest is significant, but also which
 #' functional domain is responsible for the potential rejection.
@@ -278,8 +273,18 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' The specification of the full and reduced formulas is important. The reduced model should be
 #' nested within the full model. The full model should include in addition to the reduced
 #' model the interesting factors whose effects are under investigation.
-#' The implementation to find the coefficients of the interesting factors is based on dummy.coef and
-#' the restrictions there apply.
+#' The implementation to find the coefficients of the interesting factors is based on
+#' \code{\link{dummy.coef}} and the restrictions there apply.
+#'
+#' The regression coefficients serve as test functions in the graphical functional GLM.
+#' For a continuous interesting factor, the test function is its regression coefficient across the
+#' functional domain. For a discrete factor, there are two possibilities that are controlled by
+#' the arguments \code{contrasts}. If \code{contrasts = FALSE}, then the test statistic is
+#' the function/long vector where the coefficients related to all levels of the factor are joined
+#' together. If \code{contrasts = TRUE}, then the differences between the same coefficients are
+#' considered instead. Given the coefficients in a specific order that is obtained through the use
+#' of \code{\link{lm}} and \code{\link{dummy.coef}}, the differences are taken for couples i and j
+#' where i < j and reducing j from i (e.g. for three groups 1,2,3, the constrasts are 1-2, 1-3, 2-3).
 #'
 #' There are different versions of the implementation depending on the application.
 #' Given that the argument \code{fast} is TRUE, then
@@ -304,12 +309,12 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' @param formula.reduced The formula of the reduced model with nuisance factors only. This model
 #' should be nested within the full model.
 #' @param curve_sets A named list of sets of curves giving the dependent variable (Y), and
-#' possibly additionally all the factors. The dimensions of the elements should
-#' match with each other, i.e. the factor values should be given for each argument value
-#' and each function. If factors are given in the argument \code{factors}, then can also be just
-#' the curve set representing Y. Also \code{\link[fda.usc]{fdata}} objects allowed.
+#' possibly additionally factors whose values vary across the argument values of the functions.
+#' The dimensions of the elements should match with each other.
+#' Note that factors that are fixed across the functions can be given in the argument \code{factors}.
+#' Also \code{\link[fda.usc]{fdata}} objects allowed.
 #' @param factors A data frame of factors. An alternative way to specify factors when they
-#' are constant for all argument values. The number of rows of the data frame should be equal
+#' are constant for all argument values of the functions. The number of rows of the data frame should be equal
 #' to the number of curves. Each column should specify the values of a factor.
 #' @param lm.args A named list of additional arguments to be passed to \code{\link[stats]{lm}}. See details.
 #' @param GET.args A named list of additional arguments to be passed to \code{\link{global_envelope_test}}.
@@ -321,9 +326,10 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' @return A \code{global_envelope} or \code{combined_global_envelope} object,
 #' which can be printed and plotted directly.
 #' @export
-#' @aliases graph.flm2d
 #' @references
 #' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. Methodology and Computing in Applied Probability. doi: 10.1007/s11009-019-09756-y
+#'
+#' Myllymäki, M and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 #'
 #' Freedman, D., & Lane, D. (1983) A nonstochastic interpretation of reported significance levels. Journal of Business & Economic Statistics, 1(4), 292-298. doi:10.2307/1391660
 #' @importFrom stats lm
@@ -352,6 +358,7 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #'                  contrasts = FALSE)
 #' plot(res)
 #'
+#' # An example of testing the joint effect of a discrete and a continuous variable
 #' \dontshow{nsim <- 19}
 #' \donttest{nsim <- 999}
 #' data(GDPtax)
@@ -410,7 +417,7 @@ graph.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
   X <- flm.checks(nsim=nsim, formula.full=formula.full, formula.reduced=formula.reduced,
                    curve_sets=curve_sets, factors=factors, fast=fast)
 
-  nameinteresting <- setdiff(labels(terms(formula.full)), labels(terms(formula.reduced)))
+  nameinteresting <- labels_interesting(formula.full, formula.reduced)
 
   # setting that 'fun' is a function
   if(!contrasts) genCoef <- genCoefmeans.m
@@ -545,7 +552,6 @@ graph.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
 #' @param method For advanced use.
 #' @return A \code{global_envelope} object, which can be printed and plotted directly.
 #' @export
-#' @aliases frank.flm2d
 #' @references
 #' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
