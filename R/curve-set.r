@@ -1,6 +1,6 @@
-# Turn an \code{\link[spatstat]{envelope}} object into a curve_set object.
+# Turn an \code{envelope} object of \pkg{spatstat} into a curve_set object.
 #
-# @param env An \code{\link[spatstat]{envelope}} object. The envelope()
+# @param env An \code{envelope} object of \pkg{spatstat}. The envelope()
 #   functions must have been called with savefuns = TRUE.
 # @return A corresponding curve_set object.
 # @param ... Do not use. (For internal use only.)
@@ -59,7 +59,7 @@ fdata_to_curve_set <- function(fdata, ...) {
 #
 # @param curve_set An object to be checked.
 # @param allow_Inf_values Logical. Can be used to allow infinite or nonnumeric
-# values in an \code{\link[spatstat]{envelope}} object at the first place, if those are cropped
+# values in an \code{envelope} object of \pkg{spatstat} at the first place, if those are cropped
 # away (in \code{\link{crop_curves}}).
 check_curve_set_content <- function(curve_set, allow_Inf_values = FALSE) {
   if(inherits(curve_set, "curve_set")) {
@@ -174,15 +174,14 @@ check_curve_set_content <- function(curve_set, allow_Inf_values = FALSE) {
 # @param ... Allows to pass arguments to \code{\link{check_curve_set_content}}
 # and \code{\link{envelope_to_curve_set}} (to be passed further through
 # \code{\link{create_curve_set}} to \code{\link{check_curve_set_content}}).
-# @return If an \code{\link[spatstat]{envelope}} object was given, return a
+# @return If an \code{envelope} object of \pkg{spatstat} was given, return a
 #   corresponding curve_set object. If a curve_set object was given, return
 #   it unharmed.
-#' @importFrom methods is
 convert_envelope <- function(curve_set, ...) {
   if(inherits(curve_set, 'envelope')) {
     curve_set <- envelope_to_curve_set(curve_set, ...)
   }
-  else if(!methods::is(curve_set, 'curve_set')) {
+  else if(!inherits(curve_set, 'curve_set')) {
     stop('curve_set must either have class "envelope" (from spatstat) ',
          'or class "curve_set".')
   }
@@ -202,13 +201,26 @@ convert_envelope <- function(curve_set, ...) {
 # @return If an \code{\link[fda.usc]{fdata}} object was given, return a
 #   corresponding curve_set object. If a curve_set object was given, return
 #   it unharmed.
-#' @importFrom methods is
 convert_fdata <- function(curve_set, ...) {
   if(inherits(curve_set, 'fdata')) {
     curve_set <- fdata_to_curve_set(curve_set, ...)
-  } else if(!methods::is(curve_set, 'curve_set')) {
+  } else if(!inherits(curve_set, 'curve_set')) {
     stop('curve_set must either have class "fdata" (from fda.usc) ',
          'or class "curve_set".')
+  }
+  check_curve_set_content(curve_set, ...)
+  curve_set
+}
+
+# Convert an envelope or fdata object to a curve_set object.
+convert_to_curveset <- function(curve_set, ...) {
+  if(inherits(curve_set, 'envelope')) {
+    curve_set <- envelope_to_curve_set(curve_set, ...)
+  } else if(inherits(curve_set, 'fdata')) {
+    curve_set <- fdata_to_curve_set(curve_set, ...)
+  } else if(!inherits(curve_set, 'curve_set')) {
+    stop('curve_set must either have class "envelope" (from spatstat) ',
+         'or "fdata" (from fda.usc) or "curve_set".')
   }
   check_curve_set_content(curve_set, ...)
   curve_set
@@ -223,26 +235,34 @@ check_residualness <- function(curve_set) {
   }
 }
 
-#' Create a curve set
+#' Create a curve_set object
 #'
-#' Create a curve set out of a list in the right form.
+#' Create a curve_set object out of a list in the right form.
 #'
+#'
+#' The function is used to clump together the functional data in the form
+#' that can be handled by the other \pkg{GET} functions (\code{\link{forder}},
+#' \code{\link{central_region}}, \code{\link{global_envelope_test}} etc.).
+#' The function \code{create_curve_set} takes care of checking the content of
+#' the data, and saves relevant information of the curves for global envelope
+#' methods to be used in particular for plotting the results with graphical
+#' interpretation.
 #'
 #' \code{obs} must be either
 #' \itemize{
-#' \item a vector containing the data function, or
-#' \item a matrix containing the s data functions, in which case it is assumed that
-#' each column corresponds to a data function.
+#' \item a vector containing the data function/vector, or
+#' \item a matrix containing the s data functions/vectors, in which case it is assumed that
+#' each column corresponds to a data function/vector.
 #' }
 #'
-#' If given, \code{r} describes the 1- or 2-dimensional argument values where the curves have been observed (or
-#' simulated). It must be either
+#' If given, \code{r} describes the 1- or 2-dimensional argument values where the functions/vectors
+#' have been observed (or simulated). It must be either
 #' \itemize{
 #' \item a vector,
 #' \item a data.frame with columns "x", "y", "width" and "height",
 #' where the width and height give the width and height of the pixels placed at x and y, or
-#' \item a data.frame with columns "xmin", "xmax", "ymin" and "ymax" giving the corner coordinates of the pixels
-#' where the data have been observed.
+#' \item a data.frame with columns "xmin", "xmax", "ymin" and "ymax" giving the corner
+#' coordinates of the pixels where the data have been observed.
 #' }
 #'
 #' If \code{obs} is a vector, \code{sim_m} must be a matrix containing the simulated functions.
@@ -255,8 +275,11 @@ check_residualness <- function(curve_set) {
 #' @param curve_set A list containing the element obs, and optionally
 #'   the elements r, sim_m and theo. See details.
 #' @param ... For expert use only.
-#' @return An object of class \code{curve_set}.
+#' @return An object of class \code{curve_set} containing the data.
+#' If the argument values are two-dimensional, then the \code{curve_set} is additionally
+#' a \code{curve_set2d} object.
 #' @export
+#' @seealso \code{\link{plot.curve_set}}, \code{\link{plot.curve_set2d}}
 #' @examples
 #' # 1d
 #' cset <- create_curve_set(list(r=1:10, obs=matrix(runif(10*5), ncol=5)))
@@ -298,83 +321,119 @@ is.curve_set <- function(x) inherits(x, 'curve_set')
 #' @export
 #' @importFrom utils str
 print.curve_set <- function(x, ...) {
-  str(x, ...)
+  dtext <- paste0("(", ifelse(curve_set_is1d(x), 1, 2), "d)")
+  cat("A curve_set", dtext, " object with ", curve_set_nfunc(x), " curves observed at ",
+      curve_set_narg(x), " argument values", sep="")
+  if(curve_set_is1obs(x)) cat("\n(1 observed,", curve_set_nfunc(x)-1, "simulated)")
+  cat(".\n")
+  cat("Contains: \n")
+  cat("$ r     : ")
+  str(x$r)
+  cat("$ funcs : ")
+  str(x$funcs)
 }
 
 #' Plot method for the class 'curve_set'
 #'
-#' @param x An \code{curve_set} object
-#' @param plot_style Either "ggplot2" or "basic".
-#' @param ylim The y limits of the plot with the default being the minimum and maximum over all curves.
-#' @param xlab The label for the x-axis. Default "r".
-#' @param ylab The label for the y-axis. Default "obs".
-#' @param col_obs Color for 'obs' in the argument \code{x}.
-#' @param col_sim Color for 'sim_m' in the argument \code{x}.
-#' @param ... Additional parameters to be passed to plot and lines.
-#' @inheritParams plot.global_envelope
+#' @param x An \code{curve_set} object.
+#' @param idx Indices of functions to highlight with color \code{col_idx}.
+#' Default to the observed function, if there is just one.
+#' The legend of curves' colours is shown if indices are given or \code{x} contains one observed function.
+#' See examples to remove the legend if desired.
+#' @param col_idx A color for the curves to highlight, or a vector of the same length as \code{idx}
+#' containing the colors for the highlighted functions. Default exists.
+#' @param idx_name A variable name to be printed with the highlighted functions' idx. Default to empty.
+#' @param col The basic color for the curves (which are not highlighted).
+#' @param ... Ignored.
+#' @seealso \code{\link{create_curve_set}}
 #'
 #' @export
-#' @importFrom graphics plot
-#' @importFrom graphics lines
-#' @importFrom graphics axis
-#' @importFrom graphics abline
-#' @importFrom ggplot2 ggplot
-#' @importFrom ggplot2 geom_line
-#' @importFrom ggplot2 scale_x_continuous
-#' @importFrom ggplot2 scale_y_continuous
-#' @importFrom ggplot2 labs
-#' @importFrom ggplot2 geom_vline
-plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
-                           ylim, xlab = "r", ylab = "obs", main = NULL,
-                           col_obs = 1, col_sim = 'grey70',
-                           base_size = 11, ...) {
-  plot_style <- match.arg(plot_style)
-  funcs <- curve_set_funcs(x)
-  if(!curve_set_is1obs(x)) col_sim <- col_obs
-  rdata <- combined_global_envelope_rhelper(x)
-  if(rdata$retick_xaxis) {
-    rvalues <- rdata$new_r_values
+#' @importFrom ggplot2 ggplot geom_line aes_ scale_color_manual labs
+#' @importFrom viridisLite viridis
+#' @examples
+#' cset <- create_curve_set(list(r=1:10, obs=matrix(runif(10*5), ncol=5)))
+#' plot(cset)
+#' # Highlight some functions
+#' plot(cset, idx=c(1,3))
+#' plot(cset, idx=c(1,3), col_idx=c("black", "red"))
+#' # Change legend
+#' plot(cset, idx=c(1,3), col_idx=c("black", "red"), idx_name="Special functions")
+#' plot(cset, idx=c(1,3)) + ggplot2::theme(legend.position = "bottom")
+#' # Add labels
+#' plot(cset, idx=c(1,3)) + ggplot2::labs(x="x", y="Value")
+#' # and title
+#' plot(cset) + ggplot2::labs(title="Example curves", x="x", y="Value")
+#' # A curve_set with one observed function (other simulated)
+#' if(requireNamespace("mvtnorm", quietly=TRUE)) {
+#'   cset <- create_curve_set(list(obs=c(-1.6, 1.6),
+#'             sim_m=t(mvtnorm::rmvnorm(200, c(0,0), matrix(c(1,0.5,0.5,1), 2, 2)))))
+#'   plot(cset)
+#'   # Remove legend
+#'   plot(cset) + ggplot2::theme(legend.position = "none")
+#' }
+plot.curve_set <- function(x, idx, col_idx, idx_name = "", col = 'grey70', ...) {
+  if(!all(x$r[-1] - x$r[-curve_set_narg(x)] > 0))
+    warning("r values non-increasing. Plot not valid.")
+
+  if(missing(idx)) {
+    if(curve_set_is1obs(x))
+      idx <- 1
+    else
+      idx <- NULL
   }
-  else rvalues <- x$r
-  nr <- length(rvalues)
-  if(missing('ylim')) {
-    if(plot_style == "basic") ylim <- with(x, c(min(funcs), max(funcs)))
-    else ylim <- NULL
+  else {
+    if(!is.numeric(idx)) stop("idx should be numeric.")
+  }
+  if(missing(col_idx)) {
+    if(length(idx) == 1)
+      col_idx <- 1
+    else if(length(idx) > 1)
+      col_idx <- viridis(length(idx))
+    else
+      col_idx <- NULL
+  }
+  funcs <- curve_set_funcs(x)
+  nfunc <- curve_set_nfunc(x)
+  if(!is.null(idx)) {
+    if(length(col_idx) == 1) col_idx <- rep(col_idx, times=length(idx))
+    else if(length(col_idx) != length(idx))
+      stop("If given, the length of col_idx should be 1 or equal to the length of idx.")
+    # Labels for the highlighted functions
+    if(!is.null(colnames(funcs))) idx_labs <- colnames(funcs)[idx]
+    else idx_labs <- idx
+    # Arrange the function such that the highlighted functions are the last ones
+    # (ggplot plots them to the top)
+    id_v <- idx_v <- 1:ncol(funcs)
+    idx_v[idx] <- idx_labs
+    if(length(idx) <= nfunc) {
+      if(curve_set_is1obs(x) & length(idx) == 1) othername <- "sim"
+      else othername <- "Other"
+      idx_labs <- c(idx_labs, othername)
+      idx_v[-idx] <- othername
+    }
+    id_v_levels <- c(id_v[-idx], idx)
+  }
+  else {
+    id_v <- 1:ncol(funcs)
+    id_v_levels <- id_v
   }
 
-  switch(plot_style,
-         ggplot2 = {
-             df <- data.frame(r = rvalues, f = c(funcs), id = rep(1:ncol(funcs), each=nrow(funcs)))
-             p <- ( ggplot()
-                   + geom_line(data=df[df$id!=1,], aes_(x = ~r, y = ~f, group = ~id), col=col_sim)
-                   + geom_line(data=df[df$id==1,], aes_(x = ~r, y = ~f, group = ~id), col=col_obs)
-                   + scale_y_continuous(name = ylab, limits = ylim)
-                   + labs(title=main)
-                   + ThemePlain(base_size=base_size))
-             if(rdata$retick_xaxis) {
-               p <- p + scale_x_continuous(name = xlab,
-                                           breaks = rdata$loc_break_values,
-                                           labels = paste(round(rdata$r_break_values, digits=2)),
-                                           limits = range(rdata$new_r_values))
-               p <- p + geom_vline(xintercept = rdata$new_r_values[rdata$r_values_newstart_id],
-                                  linetype = "dotted")
-             }
-             else p <- p + scale_x_continuous(name = xlab)
-             p
-         },
-         basic = {
-             # Plot
-             if(!rdata$retick_xaxis)
-                 graphics::plot(rvalues, funcs[,1], type="l", ylim=ylim, col=col_obs, xlab=xlab, ylab=ylab, main=main, ...)
-             else
-                 graphics::plot(rvalues, funcs[,1], type="l", ylim=ylim, xaxt="n", col=col_obs, xlab=xlab, ylab=ylab, main=main, ...)
-             for(i in 2:ncol(funcs)) graphics::lines(rvalues, funcs[,i], col=col_sim)
-             graphics::lines(rvalues, funcs[,1], type="l", col=col_obs, ...)
-             if(rdata$retick_xaxis) {
-                 graphics::axis(1, rdata$loc_break_values, labels=paste(round(rdata$r_break_values, digits=2)))
-                 graphics::abline(v = rdata$new_r_values[rdata$r_values_newstart_id], lty=3)
-             }
-         })
+  df <- data.frame(r = x$r, funcs = c(funcs),
+                   id =  factor(rep(id_v, each=nrow(funcs)), levels = id_v_levels))
+  if(!is.null(idx)) df$idx = factor(rep(idx_v, each=nrow(funcs)), levels = idx_labs)
+
+  p <- ( ggplot() )
+  if(!is.null(idx)) {
+    col_values <- c(col_idx, col)
+    names(col_values) <- idx_labs
+    p <- ( p + geom_line(data=df, aes_(x = ~r, y = ~funcs, group = ~id, col = ~idx))
+           + scale_color_manual(values = col_values)
+           + labs(col = idx_name) )
+  }
+  else {
+    p <- ( p + geom_line(data=df, aes_(x = ~r, y = ~funcs, group = ~id), col = col) )
+  }
+  p
 }
 
 #' Plot method for the class 'curve_set2d'
@@ -382,10 +441,8 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
 #' Plot method for the class 'curve_set2d', i.e. two-dimensional functions
 #'
 #' @param x An \code{curve_set2d} object
-#' @inheritParams plot.curve_set
-#' @param idx Indices of functions to plot for 2d plots.
-#' @param ... Additional parameters to be passed to plot and lines.
-#' @inheritParams plot.global_envelope
+#' @param idx Indices of 2d functions to plot.
+#' @param ... Ignored.
 #' @inheritParams plot.combined_global_envelope
 #'
 #' @export
@@ -393,21 +450,20 @@ plot.curve_set <- function(x, plot_style = c("ggplot2", "basic"),
 #' @importFrom ggplot2 facet_wrap
 #' @importFrom ggplot2 labs
 #' @examples
-#' data(abide_9002_23)
+#' data("abide_9002_23")
 #' plot(abide_9002_23$curve_set, idx=c(1, 27))
-plot.curve_set2d <- function(x, idx=1, base_size = 11, ncol = 2 + 1*(length(idx)==3), ...) {
+plot.curve_set2d <- function(x, idx=1, ncol = 2 + 1*(length(idx)==3), ...) {
   funcs <- curve_set_funcs(x)
   rdf <- curve_set_rdf(x)
-  data <- do.call(rbind, lapply(idx, function(i) data.frame(idx=i, f=funcs[,i])))
-  df <- cbind(rdf, data)
+  df <- do.call(rbind, lapply(idx, function(i) data.frame(rdf, idx=i, f=funcs[,i])))
   return(ggplot() + choose_geom(df, varfill='f') +
-           facet_wrap("idx", ncol=ncol) + labs(x="x", y="y", fill="") + ThemePlain2d())
+           facet_wrap("idx", ncol=ncol) + labs(x="x", y="y", fill=""))
 }
 
 # Combine curve sets.
 #
 # Combine curve sets to a one curve set, e.g. for testing by means of several test functions.
-# @param x A list of curve sets or \code{\link[spatstat]{envelope}} objects.
+# @param x A list of curve sets or \code{envelope} (from \pkg{spatstat}) objects.
 # @param equalr Whether to demand equal lengths of r vectors of the different curve sets
 # @return A curve set that is a combination of the curve sets given in 'x'.
 combine_curve_sets <- function(x, equalr = TRUE) {
@@ -416,8 +472,10 @@ combine_curve_sets <- function(x, equalr = TRUE) {
   # Combine
   cset$funcs <- do.call(rbind, lapply(x, FUN=function(curve_set) { curve_set[['funcs']] }))
   if(!is.null(x[[1]][['r']])) {
-    if(is.vector(x[[1]]$r)) cset$r <- do.call(c, lapply(x, FUN=function(curve_set) { curve_set[['r']] }))
-    else cset$r <- do.call(rbind, lapply(x, FUN=function(curve_set) { curve_set[['r']] }))
+    if(is.vector(x[[1]]$r))
+      cset$r <- do.call(c, lapply(x, FUN=function(curve_set) { curve_set[['r']] }))
+    else
+      cset$r <- do.call(rbind, lapply(x, FUN=function(curve_set) { curve_set[['r']] }))
   }
   if(!is.null(x[[1]][['theo']]))
     cset$theo <- do.call(c, lapply(x, FUN=function(curve_set) { curve_set[['theo']] }))
@@ -427,12 +485,12 @@ combine_curve_sets <- function(x, equalr = TRUE) {
 
 # Check curve set dimensions
 #
-# Check that x contains list of curve sets or \code{\link[spatstat]{envelope}} objects.
+# Check that x contains list of curve sets or \code{envelope} (from \pkg{spatstat}) objects.
 # If the latter, then convert the objects to curve sets.
 # Check that the curve sets have same elements and dimensions of them (numbers of r-values can differ for equalr=FALSE).
 # @inheritParams combine_curve_sets
 check_curve_set_dimensions <- function(x, equalr=FALSE) {
-  x <- lapply(x, FUN=convert_envelope)
+  x <- lapply(x, FUN=convert_to_curveset)
   checkequal <- function(f) {
     all(sapply(x, FUN=function(curve_set) { f(curve_set) == f(x[[1]]) }))
   }
@@ -546,6 +604,22 @@ curve_set_1obs <- function(curve_set) {
 #' @param subset A logical expression indicating curves to keep.
 #' @param ... Ignored.
 #' @export
+#' @examples
+#' if(require("fda.usc", quietly=TRUE)) {
+#'   # Prepare data
+#'   data("poblenou")
+#'   Free <- poblenou$df$day.festive == 1 |
+#'     as.integer(poblenou$df$day.week) >= 6
+#'   MonThu <- poblenou$df$day.festive == 0 & poblenou$df$day.week %in% 1:4
+#'   Friday <- poblenou$df$day.festive == 0 & poblenou$df$day.week == 5
+#'
+#'   # Data as a curve_set
+#'   cset <- create_curve_set(list(r=0:23,
+#'              obs=t(poblenou[['nox']][['data']])))
+#'   plot(subset(cset, MonThu))
+#'   plot(subset(cset, Friday))
+#'   plot(subset(cset, Free))
+#' }
 subset.curve_set <- function(x, subset, ...) {
   x[['funcs']] <- x[['funcs']][, subset]
   x

@@ -7,12 +7,11 @@
 \method{plot}{combined_global_envelope2d}(
   x,
   fixedscales = 2,
-  main,
+  labels,
   what = c("obs", "lo", "hi", "lo.sign", "hi.sign"),
   sign.col = "red",
   transparency = 155/255,
   digits = 3,
-  base_size = 11,
   ...
 )
 }
@@ -21,7 +20,8 @@
 
 \item{fixedscales}{0, 1 or 2. See details.}
 
-\item{main}{The overall main.}
+\item{labels}{A character vector of suitable length giving the labels for the separate plots.
+Default exists. This parameter allows replacing the default.}
 
 \item{what}{Character vector specifying what information should be plotted for 2d functions.
 A combination of:
@@ -29,16 +29,16 @@ Observed (\code{"obs"}), upper envelope (\code{"hi"}), lower envelope (\code{"lo
 observed with significantly higher values highlighted (\code{"hi.sign"}),
 observed with significantly lower values highlighted (\code{"lo.sign"}).}
 
-\item{sign.col}{The color for the significant regions. Default to "red".}
+\item{sign.col}{The color for the observed curve when outside the global envelope
+(significant regions). Default to "red". Setting the color to \code{NULL} corresponds
+to no coloring.}
 
 \item{transparency}{A number between 0 and 1 (default 155/255, 60% transparency).
 Similar to alpha of \code{\link[grDevices]{rgb}}. Used in plotting the significant regions for 2d
 functions.}
 
-\item{digits}{The number of digits used for printing the p-value or p-interval in the main,
-if using the default main.}
-
-\item{base_size}{Base font size, to be passed to theme style when \code{plot_style = "ggplot2"}.}
+\item{digits}{The number of digits used for printing the p-value or p-interval
+in the default main.}
 
 \item{...}{Ignored.}
 }
@@ -64,17 +64,18 @@ plot(res, what=c("hi", "lo"), fixedscales=1)
 
 plot(res, what=c("obs", "lo", "hi"), fixedscales=FALSE)
 
-if(requireNamespace("gridExtra", quietly=TRUE) && require("ggplot2", quietly=TRUE)) {
+if(requireNamespace("gridExtra", quietly=TRUE)) {
   # Edit style of "fixedscales = 2" plots
-  plot(res, what=c("obs", "hi")) + theme_minimal()
+  plot(res, what=c("obs", "hi")) + ggplot2::theme_minimal()
+  plot(res, what=c("obs", "hi")) + ggplot2::theme_bw()
 
   # Edit style (e.g. theme) of "fixedscales = 1 or 0" plots
   gs <- lapply(res, plot, what=c("obs", "hi"), main="")
   gridExtra::grid.arrange(grobs=gs, ncol=1, top="My main")
 
   gs <- outer(res, c("obs", "hi"), FUN=Vectorize(function(res, what)
-    list(plot(res, what=what, main="") + theme(axis.ticks=element_blank(),
-      axis.text=element_blank(), axis.title=element_blank()))))
+    list(plot(res, what=what, main="") + ggplot2::theme(axis.ticks=ggplot2::element_blank(),
+      axis.text=ggplot2::element_blank(), axis.title=ggplot2::element_blank()))))
   gridExtra::grid.arrange(grobs=t(gs))
 }
 }

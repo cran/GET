@@ -4,6 +4,7 @@
 ### code chunk number 1: preliminaries
 ###################################################
 options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
+set.seed(123)
 
 
 ###################################################
@@ -11,6 +12,8 @@ options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
 ###################################################
 library("GET")
 library("spatstat")
+library("ggplot2")
+theme_set(theme_bw(base_size = 9))
 
 
 ###################################################
@@ -106,7 +109,7 @@ plot(res, ylab=expression(italic(L[mm](r)-L(r))))
 ### code chunk number 13: combined1
 ###################################################
 data(saplings)
-X <- saplings
+X <- as.ppp(saplings, W = square(75))
 
 nsim <- 499 # Number of simulations
 
@@ -212,6 +215,7 @@ plot(res, ylab=expression(italic(J(r))))
 ### code chunk number 22: saplings
 ###################################################
 data(saplings)
+saplings <- as.ppp(saplings, W = square(75))
 plot(saplings)
 
 
@@ -255,7 +259,8 @@ fitppm <- function(X, model, covariates) {
 }
 
 nsim <- 19 # Increase nsim for serious analysis!
-res <- GET.spatialF(bei, fullmodel, reducedmodel, fitppm, bei.extra, nsim)
+res <- GET.spatialF(bei, fullmodel, reducedmodel,
+                    fitppm, bei.extra, nsim)
 
 plot(res$F)
 plot(res$S)
@@ -278,7 +283,8 @@ covariates$forest <-
 fullmodel <- ~ elevation + landuse
 reducedmodel <- ~ landuse
 nsim <- 19 # Increase nsim for serious analysis!
-res <- GET.spatialF(pp.lightning, fullmodel, reducedmodel, fitppm, covariates, nsim)
+res <- GET.spatialF(pp.lightning, fullmodel, reducedmodel,
+                    fitppm, covariates, nsim)
 plot(res$F)
 plot(res$S)
 
@@ -300,6 +306,7 @@ fitHardcore <- function(X, model, covariates) {
 ### code chunk number 30: saplings_data
 ###################################################
 data(saplings)
+saplings <- as.ppp(saplings, W = square(75))
 
 
 ###################################################

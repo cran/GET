@@ -11,7 +11,7 @@ whereas \code{curve_set[['obs']]} contains the water temperatures such that
 each column gives year temperatures in a year.
 }
 \usage{
-data(rimov)
+data("rimov")
 }
 \description{
 Year temperature curves
@@ -21,12 +21,14 @@ The water temperature data sampled at the water level of Rimov
 reservoir in Czech republic every day for the 36 years between 1979 and 2014.
 }
 \examples{
-data(rimov)
+data("rimov")
 groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
 for(i in 1:3)
-  print(plot(subset(rimov, groups==i),
-             main=paste("Group ", i, sep=""),
-             ylab="Temperature"))
+  assign(paste0("p", i), plot(subset(rimov, groups==i)) +
+    ggplot2::labs(title=paste("Group ", i, sep=""), y="Temperature"))
+p3
+if(require("patchwork", quietly=TRUE))
+  p1 + p2 + p3
 # See example analysis in ?graph.fanova
 }
 \references{

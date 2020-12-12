@@ -25,6 +25,8 @@
 #'
 #' To get an overview of the package, start R and type \code{library(GET)} and \code{vignette("GET")}.
 #'
+#' To get examples of point pattern analysis, start R and type \code{library(GET)} and \code{vignette("pointpatterns")}.
+#'
 #' @section Key functions in \pkg{GET}:
 #' \itemize{
 #' \item \emph{Central regions} or \emph{global envelopes} or \emph{confidence bands}:
@@ -57,14 +59,13 @@
 #' \code{X <- spruces # an example pattern from spatstat}
 #'
 #' \itemize{
-#'            \item Use \code{\link[spatstat]{envelope}} to create nsim simulations
+#'            \item Use the function \code{envelope} of \pkg{spatstat} to create nsim simulations
 #'                  under CSR and to calculate the functions you want (below K-functions by Kest).
 #'                  Important: use the option 'savefuns=TRUE' and
 #'                  specify the number of simulations \code{nsim}.
 #'
 #'                  \code{
-#'                    env <- envelope(X, nsim=999, savefuns=TRUE, fun=Kest,
-#'                                    simulate=expression(runifpoint(ex=X)))
+#'                    env <- envelope(X, nsim=999, savefuns=TRUE, fun=Kest, simulate=expression(runifpoint(ex=X)))
 #'                  }
 #'            \item Perform the test (see \code{\link{global_envelope_test}} for further arguments)
 #'
@@ -92,7 +93,6 @@
 #' \itemize{
 #'   \item \code{\link{GET.composite}}, see a detailed example in \code{\link{saplings}}
 #' }
-#' Also the adjusted tests can be based on several test functions.
 #' \item \emph{One-way functional ANOVA}:
 #'  \itemize{
 #'   \item \emph{Graphical} functional ANOVA tests: \code{\link{graph.fanova}}
@@ -133,16 +133,18 @@
 #' \itemize{
 #' \item (Fit the model and) Create \eqn{s}{s} simulations from the (fitted) null model.
 #' \item Calculate the functions \eqn{T_1(r), T_2(r), \dots, T_{s+1}(r)}{T_1(r), T_2(r), ..., T_{s+1}(r)}.
-#' \item Use \code{\link{create_curve_set}} to create a curve_set object
+#' \item Use \code{\link{create_curve_set}} to create a \code{curve_set} object
 #'       from the functions \eqn{T_i(r), i=1, \dots, s+1}{T_i(r), i=1,...,s+1}.
-#' \item Perform the test and plot the result
+#' \item Perform the test
 #'
-#'       \code{res <- global_envelope_test(curve_set) # curve_set is the 'curve_set'-object you created}
+#'       \code{res <- global_envelope_test(curve_set)}
+#'
+#' where \code{curve_set} is the 'curve_set'-object you created, and plot the result
 #'
 #'       \code{plot(res)}
 #' }
 #'
-#' 2) The workflow utilizing \pkg{\link{spatstat}}: start R, type \code{library(GET)} and \code{vignette("pointpatterns")},
+#' 2) The workflow utilizing \pkg{spatstat}: start R, type \code{library(GET)} and \code{vignette("pointpatterns")},
 #' which explains the workflow and gives many examples of point pattern analysis
 #'
 #' @section Functions for modifying sets of functions:
@@ -167,15 +169,18 @@
 #' }
 #' The data sets are used to show examples of the functions of the library.
 #'
-#' @section Number of simulations:
+#' @section Number of functions:
+#'
+#' If the number of functions is low, the choice of the measure (or type or depth) playes a role,
+#' as explained in \code{vignette("GET")} (Section 2.4).
 #'
 #' Note that the recommended minimum number of simulations for the rank
-#' envelope test based on a single function in spatial statistics is nsim=2499.
+#' envelope test (Myllymäki et al., 2017) based on a single function in spatial statistics is nsim=2499.
 #' When the number of argument values is large, also larger number simulations is needed in order to
 #' have a narrow p-interval.
 #' The "erl", "cont", "area", "qdir" and "st" global envelope tests and deviation tests can be
 #' used with a lower number of simulations, although the Monte Carlo error is obviously larger
-#' with a small number of simulations.
+#' with a lower number of simulations.
 #' For increasing the number of simulations, all the global rank envelopes approach the same curves.
 #'
 #' Mrkvička et al. (2017) discussed the number of simulations for tests based on many functions.
@@ -187,9 +192,9 @@
 #'
 #' In the special case of spatial processes (spatial point processes, random sets),
 #' the functions are typically estimators of summary functions. The package supports
-#' the use of the R library \pkg{\link{spatstat}} for generating simulations and calculating
+#' the use of the R library \pkg{spatstat} for generating simulations and calculating
 #' estimators of the chosen summary function, but alternatively these can be done by
-#' any other way, thus allowing for any models/functions.
+#' any other way, thus allowing for any user-specified models/functions.
 #' To see examples of global envelopes for analysing point pattern data,
 #' start R, type \code{library(GET)} and \code{vignette("pointpatterns")}.
 #'
@@ -210,7 +215,7 @@
 #'
 #' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #'
-#' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
+#' Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2020) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
 #' Mrkvička, T., Roskovec, T. and Rost, M. (2019) A nonparametric graphical tests of significance in functional GLM. Methodology and Computing in Applied Probability. doi: 10.1007/s11009-019-09756-y
 #'

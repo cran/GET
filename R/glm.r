@@ -8,15 +8,12 @@ flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors 
   check_isnested(formula.full, formula.reduced)
   if(nsim < 1) stop("Not a reasonable value of nsim.")
   if(vars[1] != "Y") stop("The formula should be off the form Y ~ .... where Y is the response.")
-  if(class(curve_sets)[1] != "list") {
+  if(!(length(class(curve_sets)) == 1 && class(curve_sets) == "list")) {
     curve_sets <- list(Y=curve_sets)
   }
   available <- unique(c(names(curve_sets), names(factors)))
   if(!all(vars %in% available)) stop("The variables in the formula not found in the given data (curve_sets and factors).")
   if(!all(sapply(curve_sets, function(x) inherits(x, c("curve_set", "fdata"))))) stop("The components of curve_sets do not have a valid class.")
-  if(inherits(curve_sets[['Y']], "fdata")) {
-    einfo <- curve_sets[['Y']]$names
-  } else einfo <- NULL
   curve_sets <- lapply(curve_sets, convert_fdata)
   if(any(sapply(curve_sets, function(x) curve_set_is1obs(x)))) stop("All (data) functions of the curve_set must be equal.")
   curve_sets <- check_curve_set_dimensions(curve_sets)
@@ -35,7 +32,7 @@ flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors 
   }
   vars.factors <- vars[vars %in% names(factors)]
   if(!is.null(factors) & length(vars.factors) > 0) {
-    if(class(factors)[1] != "data.frame") stop("Invalid factors argument.")
+    if(!inherits(factors, "data.frame")) stop("Invalid factors argument.")
     if(nrow(factors) != Nfunc) stop("The dimensions of Y and factors do not match.")
     # Expand the factors to each argument value
     for(i in 1:length(vars.factors)) {
@@ -52,7 +49,7 @@ flm.checks <- function(nsim, formula.full, formula.reduced, curve_sets, factors 
     list(as.data.frame(data.l[-1]))
   }
 
-  list(Y=data.l[['Y']], dfs=dfs, r=r, Nfunc=Nfunc, nr=nr, einfo=einfo)
+  list(Y=data.l[['Y']], dfs=dfs, r=r, Nfunc=Nfunc, nr=nr)
 }
 
 # Regress the given data (true or permuted) against the full model and
@@ -339,7 +336,7 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' @importFrom parallel parLapply
 #' @importFrom parallel clusterEvalQ
 #' @examples
-#' data(rimov)
+#' data("rimov")
 #' res <- graph.flm(nsim=19, # Increase the number of simulations for serious analysis!
 #'                  formula.full = Y~Year,
 #'                  formula.reduced = Y~1,
@@ -361,7 +358,7 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #' # An example of testing the joint effect of a discrete and a continuous variable
 #' \dontshow{nsim <- 19}
 #' \donttest{nsim <- 999}
-#' data(GDPtax)
+#' data("GDPtax")
 #' factors.df <- data.frame(Group = GDPtax$Group, Tax = GDPtax$Profittax)
 #' res.tax_within_group <- graph.flm(nsim = nsim,
 #'                                   formula.full = Y~Group+Tax+Group:Tax,
@@ -372,7 +369,7 @@ genFvaluesSim <- function(Y, designX.full, designX.reduced) {
 #'
 #' # Image data examples
 #'
-#' data(abide_9002_23)
+#' data("abide_9002_23")
 #' iset <- abide_9002_23$curve_set
 #' \dontshow{
 #' # Cut the data to reduce time
@@ -415,13 +412,19 @@ graph.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
   }
   # Preliminary checks and formulation of the data to suitable form for further processing
   X <- flm.checks(nsim=nsim, formula.full=formula.full, formula.reduced=formula.reduced,
-                   curve_sets=curve_sets, factors=factors, fast=fast)
+                  curve_sets=curve_sets, factors=factors, fast=fast)
 
   nameinteresting <- labels_interesting(formula.full, formula.reduced)
 
   # setting that 'fun' is a function
-  if(!contrasts) genCoef <- genCoefmeans.m
-  else genCoef <- genCoefcontrasts.m
+  if(!contrasts) {
+    genCoef <- genCoefmeans.m
+    ylab <- expression(italic(hat(beta)[i](r)))
+  }
+  else {
+    genCoef <- genCoefcontrasts.m
+    ylab <- expression(italic(hat(beta)[i](r)-hat(beta)[j](r)))
+  }
 
   # Fit the full model to the data and obtain the coefficients
   obs <- do.call(genCoef, c(list(X$Y, X$dfs, formula.full, nameinteresting), lm.args))
@@ -470,29 +473,8 @@ graph.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
                  c(list(curve_sets=csets, alternative="two.sided", nstep=1), GET.args))
   attr(res, "method") <- "Graphical functional GLM" # Change method name
   attr(res, "labels") <- complabels
-  # Take the xlab and ylab from a fdata object, if such is given:
-  if(!is.null(X$einfo)) {
-    if(!is.null(X$einfo$xlab)) {
-      if(inherits(res, "global_envelope")) {
-        attr(res, "xlab") <- attr(res, "xexp") <- X$einfo$xlab
-        if(inherits(X$einfo$xlab, "expression")) attr(res, "xlab") <- deparse(X$einfo$xlab)
-      }
-      if(inherits(res, "combined_global_envelope")) {
-        attr(attr(res, "level2_ge"), "xlab") <- attr(attr(res, "level2_ge"), "xexp") <- X$einfo$xlab
-        if(inherits(X$einfo$xlab, "expression")) attr(attr(res, "level2_ge"), "xlab") <- deparse(X$einfo$xlab)
-      }
-    }
-    if(!is.null(X$einfo$ylab)) {
-      if(inherits(res, "global_envelope")) {
-        attr(res, "ylab") <- attr(res, "yexp") <- X$einfo$ylab
-        if(inherits(attr(res, "ylab"), "expression")) attr(res, "ylab") <- deparse(attr(res, "ylab"))
-      }
-      if(inherits(res, "combined_global_envelope")) {
-        attr(attr(res, "level2_ge"), "ylab") <- attr(attr(res, "level2_ge"), "yexp") <- X$einfo$ylab
-        if(inherits(X$einfo$ylab, "expression")) attr(attr(res, "level2_ge"), "ylab") <- deparse(X$einfo$ylab)
-      }
-    }
-  }
+  # Re-define the default ylab
+  res <- envelope_set_labs(res, ylab=ylab)
   attr(res, "call") <- match.call()
   if(savefuns) attr(res, "simfuns") <- csets
   res
@@ -553,11 +535,11 @@ graph.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
 #' @return A \code{global_envelope} object, which can be printed and plotted directly.
 #' @export
 #' @references
-#' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
+#' Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2020) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
 #' Freedman, D., & Lane, D. (1983) A nonstochastic interpretation of reported significance levels. Journal of Business & Economic Statistics, 1(4), 292-298. doi:10.2307/1391660
 #' @examples
-#' data(GDPtax)
+#' data("GDPtax")
 #' factors.df <- data.frame(Group = GDPtax$Group, Tax = GDPtax$Profittax)
 #' \dontshow{nsim <- 19}
 #' \donttest{nsim <- 999}
@@ -569,7 +551,7 @@ graph.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
 #' plot(res.tax_within_group)
 #'
 #' # Image set examples
-#' data(abide_9002_23)
+#' data("abide_9002_23")
 #' iset <- abide_9002_23$curve_set
 #' \dontshow{
 #' # Cut the data to reduce time
@@ -668,9 +650,7 @@ frank.flm <- function(nsim, formula.full, formula.reduced, curve_sets, factors =
   cset <- create_curve_set(list(r = X$r, obs = obs, sim_m = sim))
   if(savefuns=="return") return(cset)
   res <- do.call(global_envelope_test, c(list(curve_sets=cset, alternative="greater"), GET.args))
-  attr(res, "ylab") <- "F(r)"
-  attr(res, "yexp") <- quote(F(r))
-  attr(res, "fname") <- "F"
+  res <- envelope_set_labs(res, ylab = expression(italic(F(r))))
   if(savefuns) attr(res, "simfuns") <- cset
   res
 }

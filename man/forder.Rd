@@ -50,7 +50,7 @@ from the most extreme to least extreme one
 }
 \details{
 Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
-or an \code{\link[spatstat]{envelope}} object,
+or an \code{envelope} object of \pkg{spatstat},
 which contains curves \eqn{T_1(r),\dots,T_s(r)}{T_1(r),...,T_s(r)},
 the functions are ordered from the most extreme one to the least extreme one
 by one of the following measures (specified by the argument \code{measure}).
@@ -125,7 +125,7 @@ Hahn U (2015). “A note on simultaneous Monte Carlo tests.” Technical report,
 
 Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 
-Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
+Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2020) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 
 Myllymäki, M., Grabarnik, P., Seijo, H. and Stoyan. D. (2015). Deviation test construction and power comparison for marked spatial point patterns. Spatial Statistics 11: 19-34. doi: 10.1016/j.spasta.2014.11.004
 

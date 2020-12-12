@@ -136,7 +136,7 @@ individual_forder <- function(curve_set,
   possible_measures <- c('rank', 'erl', 'cont', 'area', 'max', 'int', 'int2')
   if(!(measure %in% possible_measures)) stop("Unreasonable measure argument!")
 
-  curve_set <- convert_envelope(curve_set)
+  curve_set <- convert_to_curveset(curve_set)
 
   if(measure %in% c('max', 'int', 'int2')) {
     curve_set <- residual(curve_set, use_theo = use_theo)
@@ -303,7 +303,7 @@ combined_forder <- function(curve_sets, ...) {
 #'
 #'
 #' Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
-#' or an \code{\link[spatstat]{envelope}} object,
+#' or an \code{envelope} object of \pkg{spatstat},
 #' which contains curves \eqn{T_1(r),\dots,T_s(r)}{T_1(r),...,T_s(r)},
 #' the functions are ordered from the most extreme one to the least extreme one
 #' by one of the following measures (specified by the argument \code{measure}).
@@ -373,7 +373,7 @@ combined_forder <- function(curve_sets, ...) {
 #'
 #' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #'
-#' Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
+#' Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2020) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 #'
 #' Myllymäki, M., Grabarnik, P., Seijo, H. and Stoyan. D. (2015). Deviation test construction and power comparison for marked spatial point patterns. Spatial Statistics 11: 19-34. doi: 10.1016/j.spasta.2014.11.004
 #'
@@ -410,19 +410,24 @@ combined_forder <- function(curve_sets, ...) {
 forder <- function(curve_sets, measure = 'erl', scaling = 'qdir',
                    alternative=c("two.sided", "less", "greater"),
                    use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7) {
-  if(class(curve_sets)[1] == "list") {
-    res <- combined_forder(curve_sets,
-                           measure = measure, scaling = scaling,
-                           alternative = alternative,
-                           use_theo = use_theo,
-                           probs = probs, quantile.type = quantile.type)
-  }
-  else {
-    res <- individual_forder(curve_sets,
+  if(length(class(curve_sets)) == 1 && class(curve_sets) == "list") {
+    if(length(curve_sets) > 1) {
+      res <- combined_forder(curve_sets,
                              measure = measure, scaling = scaling,
                              alternative = alternative,
                              use_theo = use_theo,
                              probs = probs, quantile.type = quantile.type)
+      return(res$distance)
+    }
+    else if(length(curve_sets) == 1)
+      curve_sets <- curve_sets[[1]]
+    else
+      stop("The given list of curve_sets is empty.")
   }
-  res$distance
+  res <- individual_forder(curve_sets,
+                           measure = measure, scaling = scaling,
+                           alternative = alternative,
+                           use_theo = use_theo,
+                           probs = probs, quantile.type = quantile.type)
+  return(res$distance)
 }

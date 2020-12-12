@@ -227,10 +227,10 @@ contrasts.m <- function(x, groups, ...) {
 #'
 #' Myllymäki, M and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
 #' @examples
-#' #-- NOx levels example (see for details Myllymaki and Mrkvicka, 2019)
+#' #-- NOx levels example (see for details Myllymaki and Mrkvicka, 2020)
 #' if(require("fda.usc", quietly=TRUE)) {
 #'   # Prepare data
-#'   data(poblenou)
+#'   data("poblenou")
 #'   Free <- poblenou$df$day.festive == 1 |
 #'     as.integer(poblenou$df$day.week) >= 6
 #'   MonThu <- poblenou$df$day.festive == 0 & poblenou$df$day.week %in% 1:4
@@ -240,31 +240,22 @@ contrasts.m <- function(x, groups, ...) {
 #'   Type[MonThu] <- "MonThu"
 #'   Type[Friday] <- "Fri"
 #'   Type <- factor(Type, levels = c("MonThu", "Fri", "Free"))
-#' \donttest{
-#'   # Plot of data
-#'   if(requireNamespace("ggplot2", quietly=TRUE)) {
-#'     df <- do.call(rbind, lapply(1:24, FUN = function(x) {
-#'       data.frame(Hour = x, NOx = poblenou[['nox']]$data[,x],
-#'                  Type = Type, Date = rownames(poblenou[['nox']]$data))
-#'     }))
-#'     ggplot2::ggplot(df) + ggplot2::geom_line(ggplot2::aes(x = Hour, y = NOx, group = Date)) +
-#'       ggplot2::facet_wrap(ggplot2::vars(Type)) + GET:::ThemePlain()
-#'   }
-#' }
-#'   # Graphical functional ANOVA
+#'
+#'   # (log) Data as a curve_set
 #'   cset <- create_curve_set(list(r=0:23,
 #'              obs=t(log(poblenou[['nox']][['data']]))))
-#' \dontshow{nsim <- 19}
-#' \donttest{nsim <- 2999}
+#'   # Graphical functional ANOVA
+#'  \dontshow{nsim <- 19}
+#'  \donttest{nsim <- 2999}
 #'   res.c <- graph.fanova(nsim = nsim, curve_set = cset,
 #'                         groups = Type, variances = "unequal",
 #'                         contrasts = TRUE)
-#'   plot(res.c, xlab = "Hour", ylab = "Diff.")
+#'   plot(res.c) + ggplot2::labs(x = "Hour", y = "Diff.")
 #' }
 #'
 #' #-- Centred government expenditure centralization ratios example
 #' # This is an example analysis of the centred GEC in Mrkvicka et al.
-#' data(cgec)
+#' data("cgec")
 #'
 #' # Number of simulations
 #' \dontshow{nsim <- 19}
@@ -274,18 +265,15 @@ contrasts.m <- function(x, groups, ...) {
 #' res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
 #'                          groups = cgec$group,
 #'                          test.equality = "cov", cov.lag = 1)
-#' plot(res.cov1, ncol=3,
-#'      labels = paste("Group ", 1:3, sep=""),
-#'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-#'      ylab=expression(italic(bar(W)[i](r))))
+#' plot(res.cov1)
+#' # Add labels
+#' plot(res.cov1, labels = paste("Group ", 1:3, sep="")) +
+#'   ggplot2::xlab(substitute(paste(italic(i), " (", j, ")", sep=""), list(i="r", j="Year")))
 #' # Test for equality of variances among groups
 #' res.var <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
 #'                         groups = cgec$group,
 #'                         test.equality = "var")
-#' plot(res.var, ncol=3,
-#'      labels = paste("Group ", 1:3, sep=""),
-#'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-#'      ylab=expression(italic(bar(Z)[i](r))))
+#' plot(res.var)
 #'
 #' # Test for equality of means assuming equality of variances
 #' # a) using 'means'
@@ -293,18 +281,13 @@ contrasts.m <- function(x, groups, ...) {
 #'                     groups = cgec$group,
 #'                     variances = "equal",
 #'                     contrasts = FALSE)
-#' plot(res, ncol=3,
-#'      labels = paste("Group ", 1:3, sep=""),
-#'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-#'      ylab=expression(italic(bar(T)[i](r))))
+#' plot(res)
 #' # b) using 'contrasts'
 #' res2 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
 #'                      groups = cgec$group,
 #'                      variances = "equal",
 #'                      contrasts = TRUE)
-#' plot(res2, ncol=3,
-#'      xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-#'      ylab=expression(italic(bar(T)[i](r)-bar(T)[j](r))))
+#' plot(res2)
 #'
 #' # Image set examples
 #' data("imageset3")
@@ -341,13 +324,19 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
          "mean" = {
            if(!(variances %in% c("equal", "unequal"))) stop("Options for variances are equal and unequal.")
            if(variances == "unequal") x <- corrUnequalVar(x, groups, n.aver, mirror)
+           if(!contrasts) ylab <- expression(italic(bar(T)[i](r)))
+           else ylab <- expression(italic(bar(T)[i](r)-bar(T)[j](r)))
          },
          "var" = {
            x <- testUnequalVarTrans(x, groups)
+           if(!contrasts) ylab <- expression(italic(bar(Z)[i](r)))
+           else ylab <- expression(italic(bar(Z)[i](r)-bar(Z)[j](r)))
          },
          "cov" = {
            x <- testUnequalCovTrans(x, groups, lag=cov.lag)
            r <- r[1:(length(r)-cov.lag)]
+           if(!contrasts) ylab <- expression(italic(bar(W)[i](r)))
+           else ylab <- expression(italic(bar(W)[i](r)-bar(W)[j](r)))
          })
 
   # setting the 'fun', "means" or "constrasts"
@@ -370,6 +359,7 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
   attr(res, "method") <- "Graphical functional ANOVA" # Change method name
   attr(res, "contrasts") <- contrasts
   attr(res, "labels") <- complabels
+  res <- envelope_set_labs(res, ylab=ylab)
   attr(res, "call") <- match.call()
   if(savefuns) attr(res, "simfuns") <- csets
   res
@@ -408,7 +398,7 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' @references
 #' Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 #' @examples
-#' data(rimov)
+#' data("rimov")
 #' groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
 #' \donttest{res <- frank.fanova(nsim=2499, curve_set=rimov, groups=groups)}
 #' \dontshow{res <- frank.fanova(nsim=4, curve_set=rimov, groups=groups, alpha=0.2)}
@@ -459,5 +449,7 @@ frank.fanova <- function(nsim, curve_set, groups, variances="equal",
 
   cset <- create_curve_set(list(r = r, obs = obs, sim_m = sim))
   # Perform the global envelope test
-  global_envelope_test(cset, alternative="greater", ...)
+  res <- global_envelope_test(cset, alternative="greater", ...)
+  res <- envelope_set_labs(res, ylab = expression(italic(F(r))))
+  res
 }

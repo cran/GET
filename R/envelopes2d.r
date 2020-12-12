@@ -93,7 +93,6 @@ plot_combined_global_envelope2d_fixedscales <- function(x, what=c("obs", "hi", "
 #'
 #' @param x A 'global_envelope' object for two-dimensional functions
 #' @param fixedscales Logical. TRUE for the same scales for all images.
-#' @param main The overall main.
 #' @param what Character vector specifying what information should be plotted for 2d functions.
 #' A combination of:
 #' Observed (\code{"obs"}), upper envelope (\code{"hi"}), lower envelope (\code{"lo"}),
@@ -107,19 +106,19 @@ plot_combined_global_envelope2d_fixedscales <- function(x, what=c("obs", "hi", "
 #' @importFrom ggplot2 ggtitle
 #' @importFrom gridExtra grid.arrange
 #' @export
-plot.global_envelope2d <- function(x, fixedscales = TRUE, main,
+plot.global_envelope2d <- function(x, fixedscales = TRUE,
                                    what=c("obs", "lo", "hi", "lo.sign", "hi.sign"),
                                    sign.col = "red", transparency = 155/255,
-                                   digits = 3, base_size = 11, ...) {
+                                   digits = 3, ...) {
   what <- match.arg(what, several.ok = TRUE)
   what <- checkarg_envelope2d_what(x, what)
-  if(missing('main')) main <- env_main_default(x, digits=digits)
+  main <- env_main_default(x, digits=digits)
 
   if(fixedscales) {
     g <- plot_global_envelope2d_fixedscales(x, what, sign.col, transparency)
-    g + ggtitle(main) + ThemePlain2d(base_size=base_size)
+    g + ggtitle(main)
   } else {
-    gs <- lapply(what, function(w) { plot_global_envelope2d_fixedscales(x, w, sign.col, transparency) + ThemePlain2d(base_size=base_size) })
+    gs <- lapply(what, function(w) { plot_global_envelope2d_fixedscales(x, w, sign.col, transparency) })
     grid.arrange(grobs=gs, nrow=ceiling(length(gs)/3), top=main)
   }
 }
@@ -133,6 +132,8 @@ plot.global_envelope2d <- function(x, fixedscales = TRUE, main,
 #'
 #' @inheritParams plot.global_envelope2d
 #' @param fixedscales 0, 1 or 2. See details.
+#' @param labels A character vector of suitable length giving the labels for the separate plots.
+#' Default exists. This parameter allows replacing the default.
 #' @importFrom ggplot2 facet_grid facet_wrap ggtitle
 #' @importFrom ggplot2 label_value theme element_blank
 #' @importFrom gridExtra grid.arrange
@@ -154,39 +155,39 @@ plot.global_envelope2d <- function(x, fixedscales = TRUE, main,
 #'
 #' plot(res, what=c("obs", "lo", "hi"), fixedscales=FALSE)
 #'
-#' if(requireNamespace("gridExtra", quietly=TRUE) && require("ggplot2", quietly=TRUE)) {
+#' if(requireNamespace("gridExtra", quietly=TRUE)) {
 #'   # Edit style of "fixedscales = 2" plots
-#'   plot(res, what=c("obs", "hi")) + theme_minimal()
+#'   plot(res, what=c("obs", "hi")) + ggplot2::theme_minimal()
+#'   plot(res, what=c("obs", "hi")) + ggplot2::theme_bw()
 #'
 #'   # Edit style (e.g. theme) of "fixedscales = 1 or 0" plots
 #'   gs <- lapply(res, plot, what=c("obs", "hi"), main="")
 #'   gridExtra::grid.arrange(grobs=gs, ncol=1, top="My main")
 #'
 #'   gs <- outer(res, c("obs", "hi"), FUN=Vectorize(function(res, what)
-#'     list(plot(res, what=what, main="") + theme(axis.ticks=element_blank(),
-#'       axis.text=element_blank(), axis.title=element_blank()))))
+#'     list(plot(res, what=what, main="") + ggplot2::theme(axis.ticks=ggplot2::element_blank(),
+#'       axis.text=ggplot2::element_blank(), axis.title=ggplot2::element_blank()))))
 #'   gridExtra::grid.arrange(grobs=t(gs))
 #' }
-plot.combined_global_envelope2d <- function(x, fixedscales = 2, main,
+plot.combined_global_envelope2d <- function(x, fixedscales = 2, labels,
                                             what=c("obs", "lo", "hi", "lo.sign", "hi.sign"),
                                             sign.col = "red", transparency = 155/255,
-                                            digits = 3, base_size = 11, ...) {
+                                            digits = 3, ...) {
   what <- match.arg(what, several.ok = TRUE)
   what <- checkarg_envelope2d_what(x[[1]], what)
-  if(missing('main')) {
-    alt <- get_alternative(x[[1]])
-    main <- env_main_default(attr(x, "level2_ge"), digits=digits, alternative=alt)
-  }
+  main <- env_main_default(x, digits=digits)
+  if(missing('labels')) labels <- default_labels(x, labels)
+  names(x) <- labels
 
   if(fixedscales==2) {
     g <- plot_combined_global_envelope2d_fixedscales(x, what, sign.col, transparency)
-    g + ggtitle(main) + ThemePlain2d(base_size=base_size)
+    g + ggtitle(main)
   } else if(fixedscales==1) {
     gs <- lapply(seq_along(x), function(i) {
       env <- x[[i]]
       env$main <- names(x)[i]
       g <- plot_global_envelope2d_fixedscales(env, what, sign.col, transparency)
-      g + facet_grid(main~label) + ThemePlain2d(base_size=base_size)
+      g + facet_grid(main~label)
     })
     grid.arrange(grobs=gs, ncol=1, top=main)
   } else if(fixedscales==0) {
@@ -194,7 +195,7 @@ plot.combined_global_envelope2d <- function(x, fixedscales = 2, main,
       env$main <- main
       g <- plot_global_envelope2d_fixedscales(env, what, sign.col, transparency)
       g + facet_wrap(c("main", "label"), labeller=function(l) label_value(l, multi_line = FALSE))
-      g + ThemePlain2d(base_size=base_size) + theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
+      g + theme(axis.title = element_blank(), axis.text = element_blank(), axis.ticks = element_blank())
     }
     gs <- outer(what, seq_along(x), FUN=Vectorize(function(w, i) {
       list(f(x[[i]], names(x)[i], w))

@@ -47,47 +47,71 @@ is provided. 2 (default) for a two-step combining procedure, 1 for one-step.}
 \item{...}{Ignored.}
 }
 \value{
-Either an object of class "global_envelope" and "fv" (see \code{\link[spatstat]{fv.object}}),
-or an "combined_global_envelope" for the case that \code{curve_sets} is a list of
-objects. The objects can be printed and plotted directly.
+Either an object of class \code{global_envelope} and or an \code{combined_global_envelope} object.
+The former class is obtained when a set of curves is provided, while the latter in the case
+that \code{curve_sets} is a list of objects. The print and plot function are defined for the
+returned objects (see examples).
 
-The "global_envelope" object is essentially a data frame containing columns
+The \code{global_envelope} object is essentially a data frame containing columns
 \itemize{
 \item r = the vector of values of the argument r at which the test was made
-\item obs = the data function, if there is only one data function. Otherwise not existing.
 \item lo = the lower envelope based on the simulated functions
 \item hi = the upper envelope based on the simulated functions
-\item central = If the curve_set (or envelope object) contains a component 'theo',
+\item central = If the \code{curve_set} (or \code{envelope} object) contains a theoretical curve,
       then this function is used as the central curve and returned in this component.
-      Otherwise, the central_curve is the mean of the test functions T_i(r), i=2, ..., s+1.
-      Used for visualization only.
+      Otherwise, the central curve is the mean or median (according to the argument \code{central})
+      of the test functions T_i(r), i=2, ..., s+1. Used for visualization only.
 }
-Additionally, the return value has attributes
+and potentially additionally
 \itemize{
-  \item method = The name of the envelope test used for plotting purposes ("Global envelope")
-  \item alternative = The alternative specified in the function call.
-  \item ties = As the argument \code{ties}.
-  \item k_alpha = The value of k corresponding to the 100(1-alpha)\% global envelope.
-  \item k = The values of the chosen measure for all the functions. If there is only one
-  observed function, then k[1] will give the value of the measure for this.
-  \item call = The call of the function.
+\item obs = the data function, if there is only one data function in the given \code{curve_sets}.
+Otherwise not existing.
 }
-and a punch of attributes for the "fv" object type, see \code{\link[spatstat]{fv}}.
+Most often \code{central_region} is directly applied to functional data where all curves are observed.
+Additionally, the returned object has some attributes, where
+\itemize{
+  \item M = A vector of the values of the chosen measure for all the function.
+  If there is only one observed function, then M[1] gives the value of the measure for this.
+  \item M_alpha = The critical value of M corresponding to the 100(1-alpha)\% global envelope
+  (see Myllymäki and Mrkvička, 2020, Definition 1.1. IGI).
+}
+Further the object has some attributes for printing and plotting purposes, where
+\code{alternative}, \code{type}, \code{ties}, \code{alpha} correspond to those in the function call
+and \code{method} gives a name for the method.
 Attributes of an object \code{res} can be obtained using the function
-\code{\link[base]{attr}}, e.g. \code{attr(res, "k")} for the values of the ordering measure.
+\code{\link[base]{attr}}, e.g. \code{attr(res, "M")} for the values of the ordering measure.
 
-The "combined_global_envelope" is a list of "global_envelope" objects
-corresponding to the components of \code{curve_sets}. The second level envelope
-on which the envelope construction is based is saved in the attribute
-"level2_ge".
+If the given set of curves had the class \code{envelope} of \pkg{spatstat}, then the returned
+\code{global_envelope} object has also the class \code{fv} of spatstat, whereby one can utilize
+also the plotting functions of \pkg{spatstat}, see example in \code{\link{plot.global_envelope}}.
+However, the \code{envelope} objects are most often used with \code{\link{global_envelope_test}}
+and not with \code{central_region}.
+For an \code{fv} object, also some further attributes exists as required by \code{fv} of \pkg{spatstat}.
+
+The \code{combined_global_envelope} is a list of \code{global_envelope} objects, where
+the components correspond to the components of \code{curve_sets}.
+The \code{combined_global_envelope} object constructed with \code{nstep = 2} contains,
+in addition to some conventional ones (\code{method}, \code{alternative}, \code{type}, \code{alpha},
+\code{M}, \code{M_alpha}, see above), the second level envelope information as the attributes
+\itemize{
+\item level2_ge = The second level envelope on which the envelope construction is based
+\item level2_curve_set = The second level \code{curve_set} from which \code{level2_ge} is constructed
+}
+
+In the case that the given curve sets are two-dimensional, i.e., their arguments values are two-dimensional,
+then the returned objects have in addition to the class \code{global_envelope} or \code{combined_global_envelope},
+the class \code{global_envelope2d} or \code{combined_global_envelope2d}, respectively. This class is assigned
+for plotting purposes: For the 2d envelopes, also the default plots are 2d.
+Otherwise the 1d and 2d objects are similar.
 }
 \description{
 Provides central regions or global envelopes or confidence bands
 }
 \details{
 Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
-or an \code{\link[spatstat]{envelope}} object, the function \code{central_region}
-construcst a central region, i.e. a global envelope, from the given set of functions (or vectors).
+or an \code{envelope} object of \pkg{spatstat} or \code{fdata} object of \pkg{fda.usc},
+the function \code{central_region} construcst a central region, i.e. a global envelope,
+from the given set of functions (or vectors).
 
 Generally an envelope is a band bounded by the vectors (or functions)
 \eqn{T_{low}}{T_lo} and \eqn{T_{hi}}{T_hi}.
@@ -136,13 +160,9 @@ We recommend to use the other alternatives instead. This unscaled global envelop
 provided for reference.
 }
 
-The values of the chosen measure k are determined for each curve in the \code{curve_set}, and
-the values
-\eqn{k_1, k_2, ..., k_s}{k_1, k_2, ..., k_s}
-are returned in the attribute 'k' (in a case of one observed curve only, k[1] is its value).
-Based on the chosen measure, the central region, i.e. the global envelope, is constructed
-on the chosen interval of argument values (the functions in the \code{curve_set} are assumed
-to be given on this interval only).
+The values of the chosen measure M are determined for each curve in the \code{curve_set}, and
+based on the chosen measure, the central region, i.e. the global envelope, is constructed
+for the given curves.
 
 If a list of (suitable) objects are provided in the argument \code{curve_sets},
 then by default (\code{nstep = 2}) the two-step combining procedure is used to
@@ -159,7 +179,7 @@ if(requireNamespace("fda", quietly = TRUE)) {
                                      obs=fda::growth$hgtf))
   plot(curve_set, ylab="height")
   cr <- central_region(curve_set, coverage=0.50, type="erl")
-  plot(cr, main="50\% central region")
+  plot(cr)
 }
 
 ## Confidence bands for linear or polynomial regression
@@ -199,22 +219,20 @@ m <- array(0, c(B,length(x)))
 for(i in 1:B) { m[i,] <- (ftheta1[i,]-meanftheta)/s1[i] }
 
 # Central region computation
-boot.cset <- create_curve_set(list(r=1:length(x), obs=t(m)))
+boot.cset <- create_curve_set(list(r=1:length(x), obs=ftheta+s0*t(m)))
 cr <- central_region(boot.cset, coverage=0.95, type="erl")
-CB.lo <- ftheta+s0*cr$lo
-CB.hi <- ftheta+s0*cr$hi
 
 # Plotting the result
-plot(d, ylab="f(x)", xaxt="n", xlab="x", main="95\% central region")
-axis(1, at=(0:5)*20, labels=(0:5)/5)
-lines(ftheta)
-lines(CB.lo, lty=2)
-lines(CB.hi, lty=2)
+plot(cr) + ggplot2::labs(x = expression(italic(x)), y = expression(italic(f(x)))) +
+  ggplot2::geom_point(data = data.frame(id = 1:length(d), points = d),
+                      ggplot2::aes(x = id, y = points)) + # data points
+  ggplot2::geom_line(data = data.frame(id = 1:length(d), points = f),
+                     ggplot2::aes(x = id, y = points)) # true function
 }
 \references{
 Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 
-Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
+Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2020) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 
 Myllymäki, M., Grabarnik, P., Seijo, H. and Stoyan. D. (2015). Deviation test construction and power comparison for marked spatial point patterns. Spatial Statistics 11: 19-34. doi: 10.1016/j.spasta.2014.11.004
 

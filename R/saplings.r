@@ -9,10 +9,10 @@
 #' The pattern is a sample part of data collected over 10 ha plot as a part of a research
 #' program headed by project leader Prof. O.V. Smirnova.
 #'
-#' @format An object of class \code{\link[spatstat]{ppp.object}} representing the point
-#' pattern of tree locations.
+#' @format A \code{data.frame} containing the locations (x- and y-coordinates) of 123 trees
+#' in an area of 75 m x 75 m.
 #'
-#' @usage data(saplings)
+#' @usage data("saplings")
 #' @references
 #' Grabarnik, P. and Chiu, S. N. (2002) Goodness-of-fit test for complete spatial randomness against
 #' mixtures of regular and clustered spatial point processes. \emph{Biometrika}, \bold{89}, 411–421.
@@ -27,12 +27,14 @@
 #' @keywords spatial
 #' @name saplings
 #' @docType data
+#' @seealso \code{\link{adult_trees}}
 #' @examples
 #' # This is an example analysis of the saplings data set
 #' #=====================================================
 #' # Example of Myllymaki et al. (2017, Supplement S4).
 #' if(require("spatstat", quietly=TRUE)) {
-#'   data(saplings)
+#'   data("saplings")
+#'   saplings <- as.ppp(saplings, W=square(75))
 #'
 #'   # First choose the r-distances for L (r) and J (rJ) functions, respectively.
 #'   nr <- 500

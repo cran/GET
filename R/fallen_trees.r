@@ -11,10 +11,11 @@
 #' 
 #' The data was analysed in Myllymäki et al. (2017, Supplementary material).
 #'
-#' @format A \code{\link[spatstat]{ppp.object}} object with locations and heights (=marks)
-#' of 232 trees in a window with polygonal boundary.
+#' @format A \code{\link{list}} of two data frames, where \code{trees} contains the locations (x and y coordinates)
+#' and heights (=marks) of 232 trees in a window with polygonal boundary, and \code{window} species the polygonal
+#' window (see examples).
 #'
-#' @usage data(fallen_trees)
+#' @usage data("fallen_trees")
 #' @references
 #' Guinier, P. (1950) Foresterie et protection de la nature. l’exemple de fontainebleau. Rev Forestière Fr., II, 703-717.
 #'
@@ -26,6 +27,9 @@
 #' @name fallen_trees
 #' @docType data
 #' @examples
-#' data(fallen_trees)
-#' plot(fallen_trees)
+#' data("fallen_trees")
+#' if(require("spatstat", quietly=TRUE)) {
+#'   fallen_trees <- as.ppp(fallen_trees$trees, W = owin(poly=fallen_trees$window))
+#'   plot(fallen_trees)
+#' }
 NULL

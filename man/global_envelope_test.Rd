@@ -19,11 +19,11 @@ global_envelope_test(
 }
 \arguments{
 \item{curve_sets}{A \code{curve_set} (see \code{\link{create_curve_set}})
-or an \code{\link[spatstat]{envelope}} object containing a data function and simulated functions.
+or an \code{envelope} object of \pkg{spatstat} containing a data function and simulated functions.
 If an envelope object is given, it must contain the summary
 functions from the simulated patterns which can be achieved by setting
-\code{savefuns = TRUE} when calling \code{\link[spatstat]{envelope}}.
-Alternatively, a list of \code{curve_set} or \code{\link[spatstat]{envelope}} objects can be given.}
+\code{savefuns = TRUE} when calling the \code{envelope} function.
+Alternatively, a list of \code{curve_set} or \code{envelope} objects can be given.}
 
 \item{type}{The type of the global envelope with current options for 'rank', 'erl', 'cont', 'area',
 'qdir', 'st' and 'unscaled'. See details.}
@@ -62,18 +62,19 @@ is provided. 2 (default) for a two-step combining procedure, 1 for one-step.}
 \item{...}{Additional parameters to be passed to \code{\link{central_region}}.}
 }
 \value{
-Either an object of class "global_envelope" or "combined_global_envelope"
-(the latter for combined tests). The objects can be printed and plotted directly.
+Either an object of class "global_envelope" or "combined_global_envelope",
+similarly as the objects returned by \code{\link{central_region}}.
 
-The "global_envelope" is essentially a data frame containing columns
+The \code{global_envelope} is essentially a data frame containing columns
 \itemize{
 \item the values of the argument r at which the test was made, copied from the argument \code{curve_sets} with the corresponding names
-\item obs = values of the data function, copied from the argument \code{curve_sets}; missing if more than one observed function
+\item obs = values of the data function, copied from the argument \code{curve_sets}
+(unlike for central regions, \code{obs} always exists for a global envelope test)
 \item lo = the lower envelope
 \item hi = the upper envelope
 \item central = a central curve as specified in the argument \code{central}.
 }
-Moreover, the return value has the same attributes as the object returned by
+Moreover, the returned object has the same attributes as the \code{global_envelope} object returned by
 \code{\link{central_region}} and in addition
 \itemize{
   \item p = A point estimate for the p-value (default is the mid-rank p-value).
@@ -84,17 +85,18 @@ and in the case that \code{type = 'rank'} also
   \item ties = As the argument \code{ties}.
 }
 
-The "combined_global_envelope" is a list of "global_envelope" objects
-corresponding to the components of \code{curve_sets}. The second level envelope
-on which the envelope construction is based on is saved in the attribute
-"level2_ge".
+The \code{combined_global_envelope} is a list of \code{global_envelope} objects
+containing the above mentioned columns and which all together form the global envelope.
+It has the same attributes as described in \code{\link{central_region}}, and in addition also
+the p-value \code{p}.
+The 2d classes are attached as described in \code{\link{central_region}}.
 }
 \description{
 Global envelope test, global envelopes and p-values
 }
 \details{
 Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
-or an \code{\link[spatstat]{envelope}} object,
+or an \code{envelope} object of \pkg{spatstat},
 which contains both the data curve (or function or vector) \eqn{T_1(r)}{T_1(r)}
 (in the component \code{obs}) and
 the simulated curves \eqn{T_2(r),\dots,T_{s+1}(r)}{T_2(r),...,T_(s+1)(r)}
@@ -132,27 +134,25 @@ envelopes with intrinsic graphical interpretation.
   \item "unscaled", the unscaled envelope (providing a baseline) that has a contant width and
   that corresponds to the classical maximum deviation test (Ripley, 1981).
 }
-See Myllymäki and Mrkvička (2020, Section 2.), i.e. \code{vignette("GET")}, for more detailed description of the measures and
-the corresponding envelopes.
-
 The first four types are global rank envelopes.
 The \code{'rank'} envelope test is a completely non-parametric test,
 which provides the 100(1-alpha)% global envelope for the chosen test function
 T(r) on the chosen interval of distances and associated p-values.
 The other three are modifications of \code{'rank'} to treat the ties in
 the extreme rank ordering on which the \code{'rank'} test is based on.
-
 The last three envelopes are global scaled maximum absolute difference (MAD)
 envelope tests. The unscaled envelope test leads to envelopes with constant width over the
 distances r. Thus, it suffers from unequal variance of T(r) over the distances r and
 from the asymmetry of distribution of T(r). We recommend to use the other global
 envelope tests available. The unscaled envelope is provided as a reference.
-}
-\section{Ranking of the curves}{
 
-The options for measures to order the functions from the most extreme one to the least extreme one
-are given by the argument \code{type}: 'rank', 'erl', 'cont', 'area', 'qdir', 'st', 'unscaled'.
-The options are
+See Myllymäki and Mrkvička (2020, Section 2.), i.e. \code{vignette("GET")}, for more detailed description of the measures and
+the corresponding envelopes.
+}
+\section{Procedure}{
+
+1) First the curves are ranked from the most extreme one to the least extreme one
+by a measure that is specified by the argument \code{type}. The options are
 \itemize{
 \item 'rank': extreme ranks (Myllymäki et al., 2017)
 \item 'erl': extreme rank lengths (Myllymäki et al., 2017; Mrkvička et al., 2018)
@@ -162,27 +162,18 @@ The options are
 \item 'st': the studentized MAD measure (Myllymäki et al., 2015, 2017)
 \item 'unscaled': the unscaled MAD measure (Ripley, 1981)
 }
-See more detailed description of the envelopes and measures in Myllymäki and Mrkvička (2020, Section 2.).
-}
 
-\section{Global envelope}{
-
-Based on the measures used to rank the functions, the 100(1-alpha)\% global envelope is provided.
+2) Based on the measures used to rank the functions, the 100(1-alpha)\% global envelope is provided.
 It corresponds to the 100*coverage\% central region.
-}
 
-\section{P-values}{
-
+3) P-values:
 In the case \code{type="rank"}, based on the extreme ranks \eqn{k_i, i=1, ..., s+1}{k_i, i=1, ..., s+1},
 the p-interval is calculated. Because the extreme ranks contain ties, there is not just
 one p-value. The p-interval is given by the most liberal and the most conservative p-value
 estimate. Also a single p-value is calculated.
-By default this single p-value is the extreme rank length p-value ("erl"),
-but another option can be used by specifying \code{ties} argument.
-
-If the case \code{type = "erl"}, the (single) p-value based on the extreme rank length ordering
+By default this single p-value is the extreme rank length p-value ("erl") as specified by the argument \code{ties}.
+If the case of other measures, a (single) p-value based on the given ordering
 of the functions is calculated and returned in the attribute \code{p}.
-The same is done for other measures, the p-value always being correspondent to the chosen measure.
 }
 
 \section{Number of simulations}{
@@ -295,7 +286,7 @@ if(require("spatstat", quietly=TRUE)) {
   # As an example test CSR of the saplings point pattern by means of
   # L, F, G and J functions.
   data(saplings)
-  X <- saplings
+  X <- as.ppp(saplings, W=square(75))
 
   \donttest{nsim <- 499 # Number of simulations}
   \dontshow{nsim <- 19 # Number of simulations}
@@ -336,8 +327,9 @@ if(require("spatstat", quietly=TRUE)) {
   curve_set_G <- crop_curves(env_G, r_min=rminJ, r_max=rmaxJ)
   curve_set_J <- crop_curves(env_J, r_min=rminJ, r_max=rmaxJ)
 
-  res <- global_envelope_test(curve_sets=list(curve_set_L, curve_set_F,
-                                              curve_set_G, curve_set_J))
+  res <- global_envelope_test(curve_sets=list(L = curve_set_L, F = curve_set_F,
+                                              G = curve_set_G, J = curve_set_J))
+  plot(res)
   plot(res, labels=c("L(r)-r", "F(r)", "G(r)", "J(r)"))
   }
 }
@@ -370,7 +362,7 @@ Mrkvička, T., Myllymäki, M. and Hahn, U. (2017). Multiple Monte Carlo testing,
 
 Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432
 
-Mrkvička, T., Myllymäki, M. and Narisetty, N. N. (2019) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
+Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2020) New methods for multiple testing in permutation inference for the general linear model. arXiv:1906.09004 [stat.ME]
 
 Myllymäki, M., Grabarnik, P., Seijo, H. and Stoyan. D. (2015). Deviation test construction and power comparison for marked spatial point patterns. Spatial Statistics 11: 19-34. doi: 10.1016/j.spasta.2014.11.004
 

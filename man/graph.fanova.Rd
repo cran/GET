@@ -101,10 +101,10 @@ where \eqn{\overline{T}({\bf r})}{\bar{T}(r)} is the overall sample mean and
 This scaling of the test functions can be obtained by giving the argument \code{variances = "unequal"}.
 }
 \examples{
-#-- NOx levels example (see for details Myllymaki and Mrkvicka, 2019)
+#-- NOx levels example (see for details Myllymaki and Mrkvicka, 2020)
 if(require("fda.usc", quietly=TRUE)) {
   # Prepare data
-  data(poblenou)
+  data("poblenou")
   Free <- poblenou$df$day.festive == 1 |
     as.integer(poblenou$df$day.week) >= 6
   MonThu <- poblenou$df$day.festive == 0 & poblenou$df$day.week \%in\% 1:4
@@ -114,31 +114,22 @@ if(require("fda.usc", quietly=TRUE)) {
   Type[MonThu] <- "MonThu"
   Type[Friday] <- "Fri"
   Type <- factor(Type, levels = c("MonThu", "Fri", "Free"))
-\donttest{
-  # Plot of data
-  if(requireNamespace("ggplot2", quietly=TRUE)) {
-    df <- do.call(rbind, lapply(1:24, FUN = function(x) {
-      data.frame(Hour = x, NOx = poblenou[['nox']]$data[,x],
-                 Type = Type, Date = rownames(poblenou[['nox']]$data))
-    }))
-    ggplot2::ggplot(df) + ggplot2::geom_line(ggplot2::aes(x = Hour, y = NOx, group = Date)) +
-      ggplot2::facet_wrap(ggplot2::vars(Type)) + GET:::ThemePlain()
-  }
-}
-  # Graphical functional ANOVA
+
+  # (log) Data as a curve_set
   cset <- create_curve_set(list(r=0:23,
              obs=t(log(poblenou[['nox']][['data']]))))
-\dontshow{nsim <- 19}
-\donttest{nsim <- 2999}
+  # Graphical functional ANOVA
+ \dontshow{nsim <- 19}
+ \donttest{nsim <- 2999}
   res.c <- graph.fanova(nsim = nsim, curve_set = cset,
                         groups = Type, variances = "unequal",
                         contrasts = TRUE)
-  plot(res.c, xlab = "Hour", ylab = "Diff.")
+  plot(res.c) + ggplot2::labs(x = "Hour", y = "Diff.")
 }
 
 #-- Centred government expenditure centralization ratios example
 # This is an example analysis of the centred GEC in Mrkvicka et al.
-data(cgec)
+data("cgec")
 
 # Number of simulations
 \dontshow{nsim <- 19}
@@ -148,18 +139,15 @@ data(cgec)
 res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
                          groups = cgec$group,
                          test.equality = "cov", cov.lag = 1)
-plot(res.cov1, ncol=3,
-     labels = paste("Group ", 1:3, sep=""),
-     xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-     ylab=expression(italic(bar(W)[i](r))))
+plot(res.cov1)
+# Add labels
+plot(res.cov1, labels = paste("Group ", 1:3, sep="")) +
+  ggplot2::xlab(substitute(paste(italic(i), " (", j, ")", sep=""), list(i="r", j="Year")))
 # Test for equality of variances among groups
 res.var <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
                         groups = cgec$group,
                         test.equality = "var")
-plot(res.var, ncol=3,
-     labels = paste("Group ", 1:3, sep=""),
-     xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-     ylab=expression(italic(bar(Z)[i](r))))
+plot(res.var)
 
 # Test for equality of means assuming equality of variances
 # a) using 'means'
@@ -167,18 +155,13 @@ res <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
                     groups = cgec$group,
                     variances = "equal",
                     contrasts = FALSE)
-plot(res, ncol=3,
-     labels = paste("Group ", 1:3, sep=""),
-     xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-     ylab=expression(italic(bar(T)[i](r))))
+plot(res)
 # b) using 'contrasts'
 res2 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
                      groups = cgec$group,
                      variances = "equal",
                      contrasts = TRUE)
-plot(res2, ncol=3,
-     xlab=substitute(paste(i, " (", italic(j), ")", sep=""), list(i="Year", j="r")),
-     ylab=expression(italic(bar(T)[i](r)-bar(T)[j](r))))
+plot(res2)
 
 # Image set examples
 data("imageset3")

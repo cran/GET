@@ -2,7 +2,7 @@
 % Please edit documentation in R/curve-set.r
 \name{create_curve_set}
 \alias{create_curve_set}
-\title{Create a curve set}
+\title{Create a curve_set object}
 \usage{
 create_curve_set(curve_set, ...)
 }
@@ -13,27 +13,37 @@ the elements r, sim_m and theo. See details.}
 \item{...}{For expert use only.}
 }
 \value{
-An object of class \code{curve_set}.
+An object of class \code{curve_set} containing the data.
+If the argument values are two-dimensional, then the \code{curve_set} is additionally
+a \code{curve_set2d} object.
 }
 \description{
-Create a curve set out of a list in the right form.
+Create a curve_set object out of a list in the right form.
 }
 \details{
+The function is used to clump together the functional data in the form
+that can be handled by the other \pkg{GET} functions (\code{\link{forder}},
+\code{\link{central_region}}, \code{\link{global_envelope_test}} etc.).
+The function \code{create_curve_set} takes care of checking the content of
+the data, and saves relevant information of the curves for global envelope
+methods to be used in particular for plotting the results with graphical
+interpretation.
+
 \code{obs} must be either
 \itemize{
-\item a vector containing the data function, or
-\item a matrix containing the s data functions, in which case it is assumed that
-each column corresponds to a data function.
+\item a vector containing the data function/vector, or
+\item a matrix containing the s data functions/vectors, in which case it is assumed that
+each column corresponds to a data function/vector.
 }
 
-If given, \code{r} describes the 1- or 2-dimensional argument values where the curves have been observed (or
-simulated). It must be either
+If given, \code{r} describes the 1- or 2-dimensional argument values where the functions/vectors
+have been observed (or simulated). It must be either
 \itemize{
 \item a vector,
 \item a data.frame with columns "x", "y", "width" and "height",
 where the width and height give the width and height of the pixels placed at x and y, or
-\item a data.frame with columns "xmin", "xmax", "ymin" and "ymax" giving the corner coordinates of the pixels
-where the data have been observed.
+\item a data.frame with columns "xmin", "xmax", "ymin" and "ymax" giving the corner
+coordinates of the pixels where the data have been observed.
 }
 
 If \code{obs} is a vector, \code{sim_m} must be a matrix containing the simulated functions.
@@ -53,4 +63,7 @@ cset <- create_curve_set(list(r=data.frame(x=c(rep(1:3, 3), 4), y=c(rep(1:3, eac
                                            width=1, height=1),
                               obs=matrix(runif(10*5), ncol=5)))
 plot(cset)
+}
+\seealso{
+\code{\link{plot.curve_set}}, \code{\link{plot.curve_set2d}}
 }

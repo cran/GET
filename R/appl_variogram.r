@@ -11,7 +11,7 @@ permvariogram <- function(object, data, vars, perm=TRUE, ...) {
   if(length(vars)>1) stop("Only one variable allowed. No test for correlation between variables implemented.")
   args <- list(...)
   # Treat coordinates/locations in order to do permutations of the data
-  if(class(data)[1] == "SpatialPointsDataFrame") locations <- sp::coordinates(data)
+  if(inherits(data, "SpatialPointsDataFrame")) locations <- sp::coordinates(data)
   else {
     if(!("locations" %in% args)) stop("Either data must be provided with coordinates or locations must be given separately. See ?variogram.")
   }
@@ -57,7 +57,7 @@ permvariogram <- function(object, data, vars, perm=TRUE, ...) {
 #' if(require("sp", quietly=TRUE) & require("gstat", quietly=TRUE)) {
 #'   # Examples from gstat complemented with global envelopes
 #'   #-------------------------------------------------------
-#'   data(meuse)
+#'   data("meuse")
 #'   coordinates(meuse) <- ~x+y
 #'   # topsoil zinc concentration, mg kg-1 soil ("ppm")
 #'   bubble(meuse, "zinc",
@@ -148,8 +148,7 @@ GET.variogram <- function(object, nsim = 999, data = NULL, ..., GET.args = NULL,
   }
   res <- do.call(global_envelope_test, c(list(curve_sets=csets, nstep=1), GET.args))
 
-  attr(res, "xlab") <- attr(res, "xexp") <- "distance"
-  attr(res, "ylab") <- attr(res, "yexp") <- attr(obs, "what")
+  res <- envelope_set_labs(res, xlab="distance", ylab=attr(obs, "what"))
   if(length(levels(obs$id)) == 1) labels <- ""
   else labels <- levels(obs$id)
   if(length(unique(obs$dir.hor)) > 1) {

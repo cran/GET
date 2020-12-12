@@ -6,67 +6,44 @@
 \usage{
 \method{plot}{combined_global_envelope}(
   x,
-  main,
-  ylim = NULL,
-  xlab,
-  ylab,
-  env.col = 1,
-  color_outside = TRUE,
+  labels,
+  scales,
   sign.col = "red",
-  base_size = 11,
-  labels = NULL,
-  add = FALSE,
+  ncol = 2 + 1 * (length(x) == 3),
   digits = 3,
   level = 1,
-  ncol = 2 + 1 * (length(x) == 3),
-  nticks = 5,
-  legend = TRUE,
   ...
 )
 }
 \arguments{
 \item{x}{An 'combined_global_envelope' object}
 
-\item{main}{See \code{\link{plot.default}}. A sensible default exists.}
-
-\item{ylim}{See \code{\link{plot.default}}. A sensible default exists.}
-
-\item{xlab}{See \code{\link{plot.default}}. A sensible default exists.}
-
-\item{ylab}{See \code{\link{plot.default}}. A sensible default exists.}
-
-\item{env.col}{The color for the envelope lines (or dotplot arrows) for 1d functions. Default 1 (black).}
-
-\item{color_outside}{Logical. Whether to color the places where the data function goes
-outside the envelope. Relevant only for 1d functions.}
-
-\item{sign.col}{The color for the significant regions. Default to "red".}
-
-\item{base_size}{Base font size, to be passed to theme style when \code{plot_style = "ggplot2"}.}
-
 \item{labels}{A character vector of suitable length.
 If \code{dotplot = TRUE} (for the level 2 test), then labels for the tests at x-axis.
 Otherwise labels for the separate plots.}
 
-\item{add}{Whether to add the plot to an existing plot (TRUE) or to draw a new plot (FALSE).
-Not available for \code{plot_style = "ggplot2"}.}
+\item{scales}{See \code{\link[ggplot2]{facet_wrap}}.
+Use \code{scales = "free"} when the scales of the functions in the global envelope
+vary. \code{scales = "fixed"} is a good choice, when you want the same y-axis for all components.
+A sensible default based on r-values exists.}
 
-\item{digits}{The number of digits used for printing the p-value or p-interval in the main,
-if using the default main.}
-
-\item{level}{1 or 2. In the case of two-step combined tests (with several test functions), two different plots are available:
-1 for plotting the combined global envelopes (default and most often wanted) or
-2 for plotting the second level test result.}
+\item{sign.col}{The color for the observed curve when outside the global envelope
+(significant regions). Default to "red". Setting the color to \code{NULL} corresponds
+to no coloring.}
 
 \item{ncol}{The maximum number of columns for the figures.
 Default 2 or 3, if the length of x equals 3.
 (Relates to the number of curve_sets that have been combined.)}
 
-\item{nticks}{The number of ticks on the xaxis.}
+\item{digits}{The number of digits used for printing the p-value or p-interval
+in the default main.}
 
-\item{legend}{Logical. If FALSE, then the legend is removed from the "ggplot2" style plot.}
+\item{level}{1 or 2. In the case of two-step combined tests (with several test functions),
+two different plots are available:
+1 for plotting the combined global envelopes (default and most often wanted) or
+2 for plotting the second level test result.}
 
-\item{...}{Additional parameters to be passed to \code{\link{plot}} or \code{\link{lines}}.}
+\item{...}{Ignored.}
 }
 \description{
 This function provides plots for combined global envelopes.
