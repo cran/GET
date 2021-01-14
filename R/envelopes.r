@@ -406,12 +406,12 @@ print.combined_global_envelope <- function(x, ...) {
 #'   plot(res)
 #'   # Plots can be edited, e.g.
 #'   # Remove legend
-#'   plot(res) + ggplot2::theme(legend.position = "none")
+#'   plot(res) + ggplot2::theme(legend.position="none")
 #'   # Change its position
-#'   plot(res) + ggplot2::theme(legend.position = "right")
+#'   plot(res) + ggplot2::theme(legend.position="right")
 #'   # Change the outside color
-#'   plot(res, sign.col = "#5DC863FF")
-#'   plot(res, sign.col = NULL)
+#'   plot(res, sign.col="#5DC863FF")
+#'   plot(res, sign.col=NULL)
 #'   # Change default title and x- and y-labels
 #'   plot(res) + ggplot2::labs(title="95% global envelope", x="x", y="f(x)")
 #'
@@ -652,10 +652,10 @@ plot.combined_global_envelope <- function(x, labels, scales, sign.col = "red",
 #' @examples
 #' ## A central region of a set of functions
 #' #----------------------------------------
-#' if(requireNamespace("fda", quietly = TRUE)) {
+#' if(requireNamespace("fda", quietly=TRUE)) {
 #'   curve_set <- create_curve_set(list(r=as.numeric(row.names(fda::growth$hgtf)),
 #'                                      obs=fda::growth$hgtf))
-#'   plot(curve_set, ylab="height")
+#'   plot(curve_set) + ggplot2::ylab("height")
 #'   cr <- central_region(curve_set, coverage=0.50, type="erl")
 #'   plot(cr)
 #' }
@@ -701,11 +701,11 @@ plot.combined_global_envelope <- function(x, labels, scales, sign.col = "red",
 #' cr <- central_region(boot.cset, coverage=0.95, type="erl")
 #'
 #' # Plotting the result
-#' plot(cr) + ggplot2::labs(x = expression(italic(x)), y = expression(italic(f(x)))) +
-#'   ggplot2::geom_point(data = data.frame(id = 1:length(d), points = d),
-#'                       ggplot2::aes(x = id, y = points)) + # data points
-#'   ggplot2::geom_line(data = data.frame(id = 1:length(d), points = f),
-#'                      ggplot2::aes(x = id, y = points)) # true function
+#' plot(cr) + ggplot2::labs(x=expression(italic(x)), y=expression(italic(f(x)))) +
+#'   ggplot2::geom_point(data=data.frame(id=1:length(d), points=d),
+#'                       ggplot2::aes(x=id, y=points)) + # data points
+#'   ggplot2::geom_line(data=data.frame(id=1:length(d), points=f),
+#'                      ggplot2::aes(x=id, y=points)) # true function
 central_region <- function(curve_sets, type = "erl", coverage = 0.50,
                            alternative = c("two.sided", "less", "greater"),
                            probs = c((1-coverage)/2, 1-(1-coverage)/2),
@@ -797,6 +797,7 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #' See Myllymäki and Mrkvička (2020, Section 2.), i.e. \code{vignette("GET")}, for more detailed description of the measures and
 #' the corresponding envelopes.
 #'
+#' See \code{vignette("pointpatterns")} for examples of point pattern analyses.
 #' @section Procedure:
 #' 1) First the curves are ranked from the most extreme one to the least extreme one
 #' by a measure that is specified by the argument \code{type}. The options are
@@ -925,21 +926,21 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   # First illustrate the general workflow for the test by this example
 #'   # of CSR test for a point pattern X using the empirical L-function.
 #'   # Define the argument values at which the functions are evaluated
-#'   obs.L <- Lest(X, correction = "translate")
+#'   obs.L <- Lest(X, correction="translate")
 #'   r <- obs.L[['r']]
 #'   # The test function for the data
 #'   obs <- obs.L[['trans']] - r
 #'   # Prepare simulations and calculate test functions for them at same r as 'obs'
-#'   sim <- matrix(nrow = length(r), ncol = nsim)
+#'   sim <- matrix(nrow=length(r), ncol=nsim)
 #'   for(i in 1:nsim) {
-#'     sim.X <- runifpoint(ex = X) # simulation under CSR
-#'     sim[, i] <- Lest(sim.X, correction = "translate", r = r)[['trans']] - r
+#'     sim.X <- runifpoint(ex=X) # simulation under CSR
+#'     sim[, i] <- Lest(sim.X, correction="translate", r=r)[['trans']] - r
 #'   }
 #'   # Create a curve_set containing argument values, observed and simulated functions
-#'   cset <- create_curve_set(list(r = r, obs = obs, sim_m = sim))
+#'   cset <- create_curve_set(list(r=r, obs=obs, sim_m=sim))
 #'   # Perform the test
 #'   res <- global_envelope_test(cset, type="erl")
-#'   plot(res, ylab = expression(italic(hat(L)(r)-r)))
+#'   plot(res) + ggplot2::ylab(expression(italic(hat(L)(r)-r)))
 #'
 #'   # Simple hypothesis for a point pattern utilizing the spatstat package
 #'   #=====================================================================
@@ -947,7 +948,7 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   env <- envelope(X, fun="Lest", nsim=nsim,
 #'                   savefuns=TRUE, # save the functions
 #'                   correction="translate", # edge correction for L
-#'                   transform = expression(.-r), # centering
+#'                   transform=expression(.-r), # centering
 #'                   simulate=expression(runifpoint(ex=X))) # Simulate CSR
 #'   # The rank envelope test (ERL)
 #'   res <- global_envelope_test(env, type="erl")
@@ -959,33 +960,7 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   cset <- crop_curves(env, r_min=1, r_max=7)
 #'   # Do the rank envelope test (erl)
 #'   res <- global_envelope_test(cset, type="erl")
-#'   plot(res, ylab=expression(italic(L(r)-r)))
-#'
-#'   \donttest{
-#'   # Random labeling test
-#'   #=====================
-#'   mpp <- spruces
-#'   # 1) Perform simulations under the random labelling hypothesis and calculate
-#'   # the test function T(r) for the data pattern (mpp) and each simulation.
-#'   # The command below specifies that the test function is T(r) = \hat{L}_mm(r),
-#'   # which is an estimator of the mark-weighted L function, L_mm(r),
-#'   # with translational edge correction.
-#'   nsim <- 1999 # Number of simulations
-#'   env <- envelope(mpp, fun=Kmark, nsim = nsim, f=function(m1, m2) { m1*m2 },
-#'                   correction="translate", returnL=TRUE,
-#'                   simulate=expression(rlabel(mpp, permute=TRUE)), # Permute the marks
-#'                   savefuns=TRUE) # Save the functions
-#'   # 2)
-#'   # Crop curves to desired r-interval
-#'   curve_set <- crop_curves(env, r_min=1.5, r_max=9.5)
-#'   # Center the functions, i.e. take \hat{L}_mm(r)-T_0(r).
-#'   # Below T_0(r) = \hat{L}(r) is the mean of simulated functions.
-#'   # (This is only for visualization, does not affect the test result.)
-#'   curve_set <- residual(curve_set)
-#'   # 3) Do the rank envelope test
-#'   res <- global_envelope_test(curve_set)
-#'   # 4) Plot the test result
-#'   plot(res, ylab=expression(italic(L[mm](r)-L(r))))
+#'   plot(res) + ggplot2::ylab(expression(italic(L(r)-r)))
 #'
 #'   # A combined global envelope test
 #'   #================================
@@ -1002,6 +977,7 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   rminJ <- 0; rmaxJ <- 8; rstepJ <- (rmaxJ-rminJ)/n
 #'   r <- seq(0, rmax, by=rstep)    # r-distances for Lest
 #'   rJ <- seq(0, rmaxJ, by=rstepJ) # r-distances for Fest, Gest, Jest
+#'   \dontshow{r <- r[1:50]; rJ <- rJ[1:50]}
 #'
 #'   # Perform simulations of CSR and calculate the L-functions
 #'   env_L <- envelope(X, nsim=nsim,
@@ -1014,16 +990,13 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   # Take the simulations from the returned object
 #'   simulations <- attr(env_L, "simpatterns")
 #'   # Then calculate the other test functions F, G, J for each simulated pattern
-#'   env_F <- envelope(X, nsim=nsim,
-#'                     simulate=simulations,
+#'   env_F <- envelope(X, nsim=nsim, simulate=simulations,
 #'                     fun="Fest", correction="Kaplan", r=rJ,
 #'                     savefuns=TRUE)
-#'   env_G <- envelope(X, nsim=nsim,
-#'                     simulate=simulations,
+#'   env_G <- envelope(X, nsim=nsim, simulate=simulations,
 #'                     fun="Gest", correction="km", r=rJ,
 #'                     savefuns=TRUE)
-#'   env_J <- envelope(X, nsim=nsim,
-#'                     simulate=simulations,
+#'   env_J <- envelope(X, nsim=nsim, simulate=simulations,
 #'                     fun="Jest", correction="none", r=rJ,
 #'                     savefuns=TRUE)
 #'
@@ -1033,11 +1006,10 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #'   curve_set_G <- crop_curves(env_G, r_min=rminJ, r_max=rmaxJ)
 #'   curve_set_J <- crop_curves(env_J, r_min=rminJ, r_max=rmaxJ)
 #'
-#'   res <- global_envelope_test(curve_sets=list(L = curve_set_L, F = curve_set_F,
-#'                                               G = curve_set_G, J = curve_set_J))
+#'   res <- global_envelope_test(curve_sets=list(L=curve_set_L, F=curve_set_F,
+#'                                               G=curve_set_G, J=curve_set_J))
 #'   plot(res)
 #'   plot(res, labels=c("L(r)-r", "F(r)", "G(r)", "J(r)"))
-#'   }
 #' }
 #'
 #' # A test based on a low dimensional random vector
@@ -1064,7 +1036,7 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
 #' }
 global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
                           alternative = c("two.sided", "less", "greater"),
-                          ties = "erl", probs = c(0.025, 0.975), quantile.type=7,
+                          ties = "erl", probs = c(0.025, 0.975), quantile.type = 7,
                           central = "mean", nstep = 2, ...) {
   if(length(class(curve_sets)) == 1 && class(curve_sets) == "list") {
     if(length(curve_sets) > 1) { # Combined test
@@ -1155,7 +1127,7 @@ global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
 #'   \dontshow{nsim <- 19 # Number of simulations for testing}
 #'   # Generate nsim simulations under CSR, calculate centred L-function for the data and simulations
 #'   env <- envelope(X, fun="Lest", nsim=nsim, savefuns=TRUE,
-#'                   correction="translate", transform = expression(.-r),
+#'                   correction="translate", transform=expression(.-r),
 #'                   simulate=expression(runifpoint(ex=X)))
 #'   # The rank envelope test
 #'   res <- rank_envelope(env)
@@ -1208,7 +1180,7 @@ rank_envelope <- function(curve_set, type = "rank", ...) {
 #'   ## Test for complete spatial randomness (CSR)
 #'   # Generate nsim simulations under CSR, calculate centred L-function for the data and simulations
 #'   env <- envelope(X, fun="Lest", nsim=nsim, savefuns=TRUE,
-#'                   correction="translate", transform = expression(.-r),
+#'                   correction="translate", transform=expression(.-r),
 #'                   simulate=expression(runifpoint(ex=X)))
 #'   res_qdir <- qdir_envelope(env) # The directional quantile envelope test
 #'   plot(res_qdir)

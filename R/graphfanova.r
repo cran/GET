@@ -231,22 +231,22 @@ contrasts.m <- function(x, groups, ...) {
 #' if(require("fda.usc", quietly=TRUE)) {
 #'   # Prepare data
 #'   data("poblenou")
-#'   Free <- poblenou$df$day.festive == 1 |
-#'     as.integer(poblenou$df$day.week) >= 6
-#'   MonThu <- poblenou$df$day.festive == 0 & poblenou$df$day.week %in% 1:4
-#'   Friday <- poblenou$df$day.festive == 0 & poblenou$df$day.week == 5
-#'   Type <- vector(length=length(Free))
-#'   Type[Free] <- "Free"
-#'   Type[MonThu] <- "MonThu"
-#'   Type[Friday] <- "Fri"
+#'   fest <- poblenou$df$day.festive; week <- as.integer(poblenou$df$day.week)
+#'   Type <- vector(length=length(fest))
+#'   Type[fest == 1 | week >= 6] <- "Free"
+#'   Type[fest == 0 & week %in% 1:4] <- "MonThu"
+#'   Type[fest == 0 & week == 5] <- "Fri"
 #'   Type <- factor(Type, levels = c("MonThu", "Fri", "Free"))
 #'
 #'   # (log) Data as a curve_set
-#'   cset <- create_curve_set(list(r=0:23,
-#'              obs=t(log(poblenou[['nox']][['data']]))))
+#'   cset <- create_curve_set(list(r = 0:23,
+#'              obs = t(log(poblenou[['nox']][['data']]))))
 #'   # Graphical functional ANOVA
-#'  \dontshow{nsim <- 19}
-#'  \donttest{nsim <- 2999}
+#'   \donttest{nsim <- 2999}
+#'   \dontshow{nsim <- 19
+#'   # Decrease the data to reduce time
+#'   cset$funcs <- cset$funcs[, 20:40]
+#'   Type <- Type[20:40]}
 #'   res.c <- graph.fanova(nsim = nsim, curve_set = cset,
 #'                         groups = Type, variances = "unequal",
 #'                         contrasts = TRUE)
@@ -258,8 +258,8 @@ contrasts.m <- function(x, groups, ...) {
 #' data("cgec")
 #'
 #' # Number of simulations
-#' \dontshow{nsim <- 19}
 #' \donttest{nsim <- 2499 # increase to reduce Monte Carlo error}
+#' \dontshow{nsim <- 19}
 #'
 #' # Test for unequal lag 1 covariances
 #' res.cov1 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
@@ -279,26 +279,28 @@ contrasts.m <- function(x, groups, ...) {
 #' # a) using 'means'
 #' res <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
 #'                     groups = cgec$group,
-#'                     variances = "equal",
-#'                     contrasts = FALSE)
+#'                     variances = "equal", contrasts = FALSE)
 #' plot(res)
 #' # b) using 'contrasts'
 #' res2 <- graph.fanova(nsim = nsim, curve_set = cgec$cgec,
 #'                      groups = cgec$group,
-#'                      variances = "equal",
-#'                      contrasts = TRUE)
+#'                      variances = "equal", contrasts = TRUE)
 #' plot(res2)
 #'
 #' # Image set examples
 #' data("imageset3")
+#' \dontshow{
+#' # Cut the data to reduce time
+#' imageset3$image_set$r <- imageset3$image_set$r[c(1:3, 52:55, 103),]
+#' imageset3$image_set$funcs <- imageset3$image_set$funcs[c(1:3, 52:55, 103), ]
+#' }
 #' res <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
 #'                     curve_set = imageset3$image_set,
 #'                     groups = imageset3$Group)
 #' plot(res)
 #' # Contrasts
 #' res.c <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
-#'                       curve_set = imageset3$image_set,
-#'                       groups = imageset3$Group,
+#'                       curve_set = imageset3$image_set, groups = imageset3$Group,
 #'                       contrasts = TRUE)
 #' plot(res.c)
 graph.fanova <- function(nsim, curve_set, groups, variances="equal",
@@ -400,9 +402,9 @@ graph.fanova <- function(nsim, curve_set, groups, variances="equal",
 #' @examples
 #' data("rimov")
 #' groups <- factor(c(rep(1, times=12), rep(2, times=12), rep(3, times=12)))
-#' \donttest{res <- frank.fanova(nsim=2499, curve_set=rimov, groups=groups)}
-#' \dontshow{res <- frank.fanova(nsim=4, curve_set=rimov, groups=groups, alpha=0.2)}
-#' plot(res, ylab="F-statistic")
+#' \donttest{res <- frank.fanova(nsim = 2499, curve_set = rimov, groups = groups)}
+#' \dontshow{res <- frank.fanova(nsim = 4, curve_set = rimov, groups = groups, alpha = 0.2)}
+#' plot(res)
 #'
 #' data("imageset3")
 #' res2 <- frank.fanova(nsim = 19, # Increase nsim for serious analysis!

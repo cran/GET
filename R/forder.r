@@ -223,22 +223,6 @@ combine_erl_forder <- function(parts) {
 #' @inheritParams forder
 #' @examples
 #' data("abide_9002_23")
-#' \dontshow{
-#' ## Check that partial_forder gives the same result as forder
-#' cset <- frank.flm(nsim=19, formula.full = Y ~ Group + Sex + Age,
-#'                   formula.reduced = Y ~ Group + Sex,
-#'                   curve_sets = list(Y = abide_9002_23$curve_set),
-#'                   factors = abide_9002_23$factors, savefuns = "return")
-#' p1 <- partial_forder(cset[1:100,], measure="area")
-#' p2 <- partial_forder(cset[-(1:100),], measure="area")
-#' stopifnot(all.equal(combine_forder(list(p1, p2)), forder(cset, measure="area")))
-#' p1 <- partial_forder(cset[1:100,], measure="cont")
-#' p2 <- partial_forder(cset[-(1:100),], measure="cont")
-#' stopifnot(all.equal(combine_forder(list(p1, p2)), forder(cset, measure="cont")))
-#' p1 <- partial_forder(cset[1:100,], measure="erl")
-#' p2 <- partial_forder(cset[-(1:100),], measure="erl")
-#' stopifnot(all.equal(combine_forder(list(p1, p2)), forder(cset, measure="erl")))
-#' }
 #' res <- lapply(list(1:100, 101:200, 201:261), function(part) {
 #'   set.seed(123) # When using partial_forder, all parts must use the same seed.
 #'   fset <- frank.flm(nsim=99, formula.full = Y ~ Group + Sex + Age,
@@ -391,10 +375,8 @@ combined_forder <- function(curve_sets, ...) {
 #'   curves <- fda::growth[['hgtf']][years,]
 #'   cset1 <- create_curve_set(list(r = as.numeric(years),
 #'                                  obs = curves))
-#'   plot(cset1, ylab="Height")
 #'   cset2 <- create_curve_set(list(r = as.numeric(years[-1]),
 #'                                  obs = curves[-1,] - curves[-nrow(curves),]))
-#'   plot(cset2)
 #'
 #'   # Order the girls from most extreme one to the least extreme one, below using the 'area' measure
 #'   # a) according to their heights
