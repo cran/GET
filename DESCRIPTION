@@ -1,6 +1,6 @@
 Package: GET
-Version: 0.2-2
-Date: 2021-1-11
+Version: 0.2-4
+Date: 2021-3-18
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -21,8 +21,9 @@ Authors@R: c(
     )
 Maintainer: Mari Myllymäki <mari.myllymaki@luke.fi>
 Imports: ggplot2, gridExtra, parallel, stats, utils, viridisLite
-Suggests: gstat, sp, fda, fda.usc, mvtnorm, patchwork, spatstat,
-        testthat, R.rsp
+Suggests: gstat, sp, fda, fda.usc, mvtnorm, patchwork, spatstat.geom,
+        spatstat.core, spatstat.linnet, spatstat (>= 2.0-0), testthat,
+        R.rsp
 Description: Implementation of global envelopes for a set of general d-dimensional vectors T
     in various applications. A 100(1-alpha)% global envelope is a band bounded by two
     vectors such that the probability that T falls outside this envelope in any of the d
@@ -46,7 +47,7 @@ License: GPL-3
 RoxygenNote: 7.1.1
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2021-01-14 08:49:43 UTC; 03080687
+Packaged: 2021-03-19 22:00:29 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Pavel Grabarnik [ctb],
@@ -56,4 +57,4 @@ Author: Mari Myllymäki [aut, cre],
   Henri Seijo [ctb]
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2021-01-14 09:50:14 UTC
+Date/Publication: 2021-03-21 08:00:08 UTC
