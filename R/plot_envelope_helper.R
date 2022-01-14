@@ -58,8 +58,8 @@ env_main_default <- function(x, digits=3, alternative=get_alternative(x)) {
                      "Alternative = \"", alternative, "\"\n")
   }
   else {
-    if(!is.null(attr(x, "p"))) {
-      p <- round(attr(x, "p"), digits=digits)
+    if(!is.null(attr(x, "p", exact=TRUE))) {
+      p <- round(attr(x, "p", exact=TRUE), digits=digits)
       if(p > 0) main <- paste(attr(x, "method"), ": p = ", p, sep="")
       else main <- paste0(attr(x, "method"), ": p < ", 10^(-digits))
       if(alternative != "two.sided")
@@ -69,9 +69,9 @@ env_main_default <- function(x, digits=3, alternative=get_alternative(x)) {
     else {
       if(!is.null(attr(x, "alpha"))) {
         if(inherits(x, c("fboxplot", "combined_fboxplot")))
-          main <- paste0(attr(x, "method"), " based on ", 100*(1-attr(x, "alpha")), "% central region (", attr(x, "type"), ")")
+          main <- paste0(attr(x, "method"), " based on ", 100*(1-attr(x, "alpha")[1]), "% central region (", attr(x, "type"), ")")
         else if(inherits(x, c("global_envelope")))
-          main <- paste0(100*(1-attr(x, "alpha")), "% central region (", attr(x, "type"), ")")
+          main <- paste0(paste(100*(1-attr(x, "alpha")), collapse=", "), "% central region (", attr(x, "type"), ")")
         else
           main <- NULL
       }
@@ -154,11 +154,14 @@ env_dotplot_ggplot <- function(x, labels=NULL, sign.col="red") {
   if(is.null(labels) && !is.null(x[['r']])) labels <- paste(round(x[['r']], digits=2))
   df <- as.data.frame(x)
   arrow <- arrow(angle=75)
-  g <- ggplot(df) + geom_segment(aes(x=.data$r, y=.data$central, xend=.data$r, yend=.data$hi), arrow=arrow) +
-    geom_segment(aes(x=factor(.data$r), y=.data$central, xend=.data$r, yend=.data$lo), arrow=arrow)
+  if(length(attr(x, "alpha")) > 1) message("Note: dotplot shows only the largest envelope.")
+  loname <- env_loname(attr(x, "alpha"), largest=TRUE)
+  hiname <- env_hiname(attr(x, "alpha"), largest=TRUE)
+  g <- ggplot(df) + geom_segment(aes(x=.data$r, y=.data$central, xend=.data$r, yend=.data[[hiname]]), arrow=arrow) +
+    geom_segment(aes(x=factor(.data$r), y=.data$central, xend=.data$r, yend=.data[[loname]]), arrow=arrow)
   if(!is.null(x[['obs']])) {
     if(is.null(sign.col)) sign.col <- "black"
-    g <- g + geom_point(aes(x=factor(.data$r), y=.data$obs, col=ifelse(.data$obs > .data$hi | .data$obs < .data$lo, sign.col, "black")), shape="x", size=5)
+    g <- g + geom_point(aes(x=factor(.data$r), y=.data$obs, col=ifelse(.data$obs > .data[[hiname]] | .data$obs < .data[[loname]], sign.col, "black")), shape="x", size=5)
   }
   g <- g + geom_point(aes(x=factor(.data$r), y=.data$central)) +
     scale_color_identity() +
@@ -190,15 +193,34 @@ env_df_construction <- function(x, main) {
 linetype_values <- function() { c('dashed', 'solid') }
 
 # Basic elements of the envelope (gg)plot
-#' @importFrom ggplot2 geom_ribbon aes_ geom_line
+# level = The significance level(s) of the data that are found in df.
+# If 0 (or other single number), then "lo" and "hi" should be found in df.
+# Otherwise several lo.xx and hi.xx, where xx represent different levels.
+#' @importFrom ggplot2 geom_ribbon aes_string geom_line
 #' @importFrom ggplot2 labs scale_linetype_manual
-basic_stuff_for_env_ggplot <- function(df, xlab, ylab, main) {
-  list(geom_ribbon(data = df, aes_(x = ~r, ymin = ~lo, ymax = ~hi),
-                   fill = 'grey59', alpha = 1),
+basic_stuff_for_env_ggplot <- function(df, xlab, ylab, main, level=0) {
+  pE <- list()
+  lonames <- env_loname(level)
+  hinames <- env_hiname(level)
+  if(length(level) ==  1) cols <- 'grey59'
+  else cols <- paste0('grey', floor(seq(80, 59, length=length(level))))
+  for(i in 1:length(level)) {
+    pE[[i]] <- geom_ribbon(data = df, aes_string(x = "r", ymin = lonames[i], ymax = hinames[i]),
+                     fill = cols[i], alpha = 1)
+  }
+  c(pE, list(
        geom_line(data = df, aes_(x = ~r, y = ~curves, group = ~type,
                                  linetype = ~type)), # , size = 0.2
        labs(title = main, x = xlab, y = ylab),
-       scale_linetype_manual(values = linetype_values(), name = ''))
+       scale_linetype_manual(values = linetype_values(), name = '')))
+}
+basic_stuff_for_fclustplot <- function(df, xlab, ylab, main, fillcolor = 'grey59', alpha = 0.5, size=0.3) {
+  list(geom_ribbon(data = df, aes_(x = ~r, ymin = ~lo, ymax = ~hi),
+                   fill = fillcolor, alpha = alpha),
+       geom_line(data = df, aes_(x = ~r, y = ~curves, group = ~type,
+                                 linetype = ~type), size = size),
+       labs(title = main, x = xlab, y = ylab),
+       scale_linetype_manual(values = 'solid', name = ''))
 }
 
 # An internal function for making a ggplot2 style "global envelope plot"
@@ -212,15 +234,18 @@ basic_stuff_for_env_ggplot <- function(df, xlab, ylab, main) {
 #' @importFrom ggplot2 ggplot theme guides geom_point aes_
 env_ggplot <- function(x, main, xlab, ylab, sign.col="red") {
   if(!inherits(x, "global_envelope")) stop("Internal error.")
-
   df <- env_df_construction(x, NULL)
   p <- ( ggplot()
-         + basic_stuff_for_env_ggplot(df, xlab, ylab, main)
+         + basic_stuff_for_env_ggplot(df, xlab, ylab, main, attr(x, "alpha"))
          + set_envelope_legend_position() )
   if(length(levels(df$type)) < 2) p <- p + guides(linetype = "none")
   if("Data function" %in% levels(df$type)) {
     if(!is.null(sign.col)) {
-      df.outside <- df[df$type == "Data function",]
+      df.outside <- df[df$type == "Data function",
+                       c("r", "curves",
+                         env_loname(attr(x, "alpha"), largest=TRUE),
+                         env_hiname(attr(x, "alpha"), largest=TRUE))]
+      names(df.outside)[3:4] <- c("lo", "hi")
       df.outside <- df.outside[df.outside$curves < df.outside$lo | df.outside$curves > df.outside$hi,]
       p <- p + geom_point(data=df.outside, ggplot2::aes_(x = ~r, y = ~curves), color=sign.col, size=1)
     }
@@ -286,7 +311,7 @@ env_combined_ggplot <- function(x, main, xlab, ylab, labels, scales = "free",
 
   df <- combined_df_construction(x, labels=labels)
   p <- ( ggplot()
-         + basic_stuff_for_env_ggplot(df, xlab, ylab, main)
+         + basic_stuff_for_env_ggplot(df, xlab, ylab, main, attr(x, "alpha"))
          + facet_wrap(~ plotmain, scales=scales,
                       nrow=nrows_of_plots, ncol=ncols_of_plots)
          + set_envelope_legend_position() )
@@ -294,7 +319,12 @@ env_combined_ggplot <- function(x, main, xlab, ylab, labels, scales = "free",
     p <- p + guides(linetype = "none")
   if("Data function" %in% levels(df$type)) {
     if(!is.null(sign.col)) {
-      df.outside <- df[df$type == "Data function",]
+      df.outside <- df[df$type == "Data function",
+                       c("r", "curves",
+                         env_loname(attr(x, "alpha"), largest=TRUE),
+                         env_hiname(attr(x, "alpha"), largest=TRUE),
+                         "plotmain")]
+      names(df.outside)[3:4] <- c("lo", "hi")
       df.outside <- df.outside[df.outside$curves < df.outside$lo | df.outside$curves > df.outside$hi,]
       p <- p + geom_point(data=df.outside, ggplot2::aes_(x=~r, y=~curves), color=sign.col, size=1)
     }
