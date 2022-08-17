@@ -219,7 +219,6 @@ combine_erl_forder <- function(parts) {
 #'
 #' @param curve_set A \code{curve_set} object, usually a part of a larger \code{curve_set}.
 #' @seealso \code{\link{forder}}
-#' @return
 #' @inheritParams forder
 #' @examples
 #' data("abide_9002_23")
@@ -392,7 +391,7 @@ combined_forder <- function(curve_sets, ...) {
 forder <- function(curve_sets, measure = 'erl', scaling = 'qdir',
                    alternative=c("two.sided", "less", "greater"),
                    use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7) {
-  if(length(class(curve_sets)) == 1 && class(curve_sets) == "list") {
+  if(length(class(curve_sets)) == 1 && inherits(curve_sets, "list")) {
     if(length(curve_sets) > 1) {
       res <- combined_forder(curve_sets,
                              measure = measure, scaling = scaling,

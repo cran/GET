@@ -92,6 +92,10 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
     central <- "median"
     warning("Invalid option fiven for central. Using central = median.")
   }
+  if(central == "median" && type %in% c("qdir", "st", "unscaled")) {
+    central <- "mean"
+    warning("Using the mean as the central function. qdir, st and unscaled envelopes are defined with the mean.")
+  }
   picked_attr <- pick_attributes(curve_set, alternative=alternative) # saving for attributes / plotting purposes
   if(isenvelope & length(alpha)>1) {
     # Note: no fv object for multiple coverages
@@ -122,7 +126,7 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
   Nfunc <- length(distance) # Number of functions
   nr <- curve_set_narg(curve_set)
   # Define the central curve T_0
-  T_0 <- get_T_0(curve_set)
+  T_0 <- get_T_0(curve_set, central=central)
 
   # Check reasonability of Nfunc vs alpha
   if(any(Nfunc*alpha < 1-.Machine$double.eps^0.5))
@@ -650,6 +654,7 @@ plot.combined_global_envelope <- function(x, labels, scales, sign.col = "red",
 #' @param central Either "mean" or "median". If the curve sets do not contain the component
 #' \code{theo} for the theoretical central function, then the central function (used for plotting only)
 #' is calculated either as the mean or median of functions provided in the curve sets.
+#' For 'qdir', 'st' and 'unscaled' only the mean is allowed as an option, due to their definition.
 #' @param nstep 1 or 2 for how to contruct a combined global envelope if list of curve sets
 #' is provided. 2 (default) for a two-step combining procedure, 1 for one-step.
 #' @param ... Ignored.
@@ -776,7 +781,7 @@ central_region <- function(curve_sets, type = "erl", coverage = 0.50,
                            probs = c(0.25, 0.75),
                            quantile.type = 7,
                            central = "median", nstep = 2, ...) {
-  if(length(class(curve_sets)) == 1 && class(curve_sets) == "list") {
+  if(length(class(curve_sets)) == 1 && inherits(curve_sets, "list")) {
     if(length(curve_sets) > 1) { # Combined test
       if(!(nstep %in% c(1,2))) stop("Invalid number of steps (nstep) for combining. Should be 1 or 2.")
       if(nstep == 2) # Two-step combining procedure
@@ -1104,7 +1109,7 @@ global_envelope_test <- function(curve_sets, type = "erl", alpha = 0.05,
                           alternative = c("two.sided", "less", "greater"),
                           ties = "erl", probs = c(0.025, 0.975), quantile.type = 7,
                           central = "mean", nstep = 2, ...) {
-  if(length(class(curve_sets)) == 1 && class(curve_sets) == "list") {
+  if(length(class(curve_sets)) == 1 && inherits(curve_sets, "list")) {
     if(length(curve_sets) > 1) { # Combined test
       if(!(nstep %in% c(1,2))) stop("Invalid number of steps (nstep) for combining. Should be 1 or 2.")
       if(nstep == 2) # Two-step combining procedure

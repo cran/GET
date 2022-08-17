@@ -294,7 +294,9 @@ create_curve_set <- function(curve_set, ...) {
   is1obs <- is.vector(curve_set[['obs']])
   if(is1obs) {
     funcs <- cbind(curve_set[['obs']], curve_set[['sim_m']])
-    colnames(funcs) <- c('obs', paste("sim", 1:(ncol(funcs)-1), sep=""))
+    cnames <- 'obs'
+    if(ncol(funcs) > 1) cnames <- c(cnames, paste("sim", 1:(ncol(funcs)-1), sep=""))
+    colnames(funcs) <- cnames
   }
   else funcs <- curve_set[['obs']]
   if(!is.null(curve_set[['r']])) r <- curve_set[['r']]
@@ -520,6 +522,19 @@ curve_set_funcs <- function(curve_set) {
 # A helper function to give the names of the functions
 curve_set_funcnames <- function(curve_set) {
   colnames(curve_set[['funcs']])
+}
+
+# A helper function to return all the functions from a curve set in a matrix except the 1obs if there is one special one.
+# Each row corresponds to a function.
+data_or_sim_curves <- function(curve_set) {
+  if(curve_set_is1obs(curve_set)) t(curve_set[['funcs']][,-1])
+  else t(curve_set[['funcs']])
+}
+# A helper function to return all the functions from a curve set in a matrix except the 1obs if there is one special one.
+# Each column corresponds to a function.
+curve_set_funcs_no1obs <- function(curve_set) {
+  if(curve_set_is1obs(curve_set)) curve_set[['funcs']][,-1]
+  else curve_set[['funcs']]
 }
 
 # A helper function to obtain the mean of functions in curve_set.
