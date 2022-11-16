@@ -4,16 +4,19 @@
 contrank <- function(y) {
   ordery <- order(y)
   n <- length(y)
+  if(n==1) return(0.5)
   y <- y[ordery]
   ties <- y[1:(n-2)] == y[3:n] # same as j = 1:(n-2); ties <- y[j-1] == y[j+1]
   # If there are two tied values then the tree following expressions magically yield the right result
   # and it's not necessary to handle the ties specially
   RR <- numeric(n)
-  RR[1] <- exp(-(y[1]-y[2])/(y[2]-y[n]))
+  RR[1] <- exp((y[1]-y[2])/(y[n]-y[2])) # The ordering of y's in the denominator is important for getting the sign right if the numbers are equal
   RR[n] <- n - exp(-(y[n]-y[n-1])/(y[n-1]-y[1]))
-  RR[2:(n-1)] <- 1:(n-2)+(y[1:(n-2)]-y[2:(n-1)])/(y[1:(n-2)]-y[3:n])
+  if(n >= 3) {
+    RR[2:(n-1)] <- 1:(n-2)+(y[1:(n-2)]-y[2:(n-1)])/(y[1:(n-2)]-y[3:n])
+  }
 
-  if(any(ties)) { # The case of some ties
+  if(any(ties) || n==2) { # The case of some ties
     ordrank <- rank(y, ties.method = "average")
     # Find all elements occuring at least twice.
     # It would be enough to consider only elements occuring at least three times, but it's okay.
@@ -84,7 +87,6 @@ individual_partial_forder <- function(curve_set, measure = c('erl', 'rank', 'con
   curve_set <- convert_envelope(curve_set)
 
   all_curves <- data_and_sim_curves(curve_set)
-  Nfunc <- dim(all_curves)[1]
   nr <- curve_set_narg(curve_set)
 
   # Calculate pointwise ranks for each argument value (r)
@@ -160,6 +162,7 @@ individual_forder <- function(curve_set,
              distance <- partial_forder
            },
            erl = {
+             if(is.vector(partial_forder)) partial_forder <- matrix(partial_forder, nrow=1) # the case nr == 1
              distance <- rank_matrix_cols(partial_forder)
            },
            cont = {
@@ -391,7 +394,7 @@ combined_forder <- function(curve_sets, ...) {
 forder <- function(curve_sets, measure = 'erl', scaling = 'qdir',
                    alternative=c("two.sided", "less", "greater"),
                    use_theo = TRUE, probs = c(0.025, 0.975), quantile.type = 7) {
-  if(length(class(curve_sets)) == 1 && inherits(curve_sets, "list")) {
+  if(!is_a_single_curveset(curve_sets)) {
     if(length(curve_sets) > 1) {
       res <- combined_forder(curve_sets,
                              measure = measure, scaling = scaling,

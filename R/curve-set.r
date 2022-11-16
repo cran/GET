@@ -212,6 +212,13 @@ convert_fdata <- function(curve_set, ...) {
   curve_set
 }
 
+# Check if the given object is valid as a curve_set.
+# Employed to check if a curve_set (single envelopes) or
+# a list of curve_sets is given (combine envelopes).
+is_a_single_curveset <- function(curve_set) {
+  inherits(curve_set, c('curve_set', 'envelope', 'fdata'))
+}
+
 # Convert an envelope or fdata object to a curve_set object.
 convert_to_curveset <- function(curve_set, ...) {
   if(inherits(curve_set, 'envelope')) {
@@ -303,8 +310,8 @@ create_curve_set <- function(curve_set, ...) {
   else r <- 1:nrow(funcs)
   cset <- list(r = r, funcs = funcs, is1obs = is1obs)
   if(!is.null(curve_set[['theo']])) cset$theo <- curve_set[['theo']]
-  class(cset) <- 'curve_set'
-  if(!is.vector(r)) class(cset) <- c('curve_set2d', class(cset))
+  class(cset) <- c("curve_set", class(cset))
+  if(!is.vector(r)) class(cset) <- c("curve_set2d", class(cset))
   cset
 }
 
@@ -424,16 +431,18 @@ plot.curve_set <- function(x, idx, col_idx, idx_name = "", col = 'grey70', ...) 
                    id =  factor(rep(id_v, each=nrow(funcs)), levels = id_v_levels))
   if(!is.null(idx)) df$idx = factor(rep(idx_v, each=nrow(funcs)), levels = idx_labs)
 
+  if(curve_set_narg(x) > 1) geom <- geom_line
+  else geom <- geom_point
   p <- ( ggplot() )
   if(!is.null(idx)) {
     col_values <- c(col_idx, col)
     names(col_values) <- idx_labs
-    p <- ( p + geom_line(data=df, aes_(x = ~r, y = ~funcs, group = ~id, col = ~idx))
+    p <- ( p + geom(data=df, aes_(x = ~r, y = ~funcs, group = ~id, col = ~idx))
            + scale_color_manual(values = col_values)
            + labs(col = idx_name) )
   }
   else {
-    p <- ( p + geom_line(data=df, aes_(x = ~r, y = ~funcs, group = ~id), col = col) )
+    p <- ( p + geom(data=df, aes_(x = ~r, y = ~funcs, group = ~id), col = col) )
   }
   p
 }

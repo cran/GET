@@ -72,7 +72,7 @@ as implemented in the \proglang{R} package \pkg{GET}.
   Latokartanonkaari 9\\
   FI-00790 Helsinki, Finland\\
   E-mail: \email{mari.myllymaki@luke.fi}\\
-  URL: \url{https://www.luke.fi/en/personnel/mari-myllymaki/} 
+  URL: \url{https://www.luke.fi/en/experts/mari-myllymaki/}
 }
 
 \begin{document}
@@ -85,7 +85,7 @@ The examples utilize the \proglang{R} \citep{R2020} package \pkg{spatstat} \cite
 \begin{Schunk}
 \begin{Sinput}
 R> library("GET")
-R> library("spatstat.core")
+R> library("spatstat.model")
 R> library("ggplot2")
 R> theme_set(theme_bw(base_size = 9))
 \end{Sinput}

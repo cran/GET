@@ -12,7 +12,9 @@ GET.composite(
   nsimsub = nsim,
   simfun = NULL,
   fitfun = NULL,
-  calcfun = function(X) {     X },
+  calcfun = function(X) {
+     X
+ },
   testfuns = NULL,
   ...,
   type = "erl",
@@ -217,7 +219,7 @@ if(require("fda.usc", quietly=TRUE)) {
 #================================
 # Test the fit of a Matern cluster process.
 \donttest{
-if(require("spatstat.core", quietly=TRUE)) {
+if(require("spatstat.model", quietly=TRUE)) {
   data("saplings")
   saplings <- as.ppp(saplings, W = square(75))
 
