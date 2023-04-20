@@ -1,6 +1,6 @@
 Package: GET
-Version: 0.3-2
-Date: 2022-11-16
+Version: 0.4
+Date: 2023-04-19
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -22,8 +22,8 @@ Authors@R: c(
     email = 'henri.seijo@iki.fi')
     )
 Maintainer: Mari Myllymäki <mari.myllymaki@luke.fi>
-Imports: cluster, ggplot2, gridExtra, parallel, stats, utils,
-        viridisLite
+Imports: cluster, ggplot2, grDevices, gridExtra, parallel, stats,
+        utils, viridisLite
 Suggests: crayon, geoR, gstat, sp, fda, fda.usc, locfit, mvtnorm,
         patchwork, spatstat.geom, spatstat.explore, spatstat.model,
         testthat, R.rsp
@@ -50,10 +50,10 @@ Description: Implementation of global envelopes for a set of general d-dimension
     Dai et al. (2022) <doi: 10.5772/intechopen.100124>, and
     Dvořák and Mrkvička (2022) <doi: 10.1007/s00180-021-01134-y>.
 License: GPL-3
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2022-11-16 09:04:35 UTC; 03080687
+Packaged: 2023-04-19 20:18:08 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Jiří Dvořák [ctb],
@@ -64,4 +64,4 @@ Author: Mari Myllymäki [aut, cre],
   Henri Seijo [ctb]
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2022-11-16 15:40:25 UTC
+Date/Publication: 2023-04-20 16:32:43 UTC
