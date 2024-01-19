@@ -73,8 +73,8 @@
 #' \dontshow{
 #' r <- r[1:10]
 #' }
-#' cset1 <- create_curve_set(list(r = r, obs = popgrowthmillion))
-#' cset2 <- create_curve_set(list(r = r, obs = spopgrowthmillion))
+#' cset1 <- curve_set(r = r, obs = popgrowthmillion)
+#' cset2 <- curve_set(r = r, obs = spopgrowthmillion)
 #' csets <- list(Raw = cset1, Shape = cset2)
 #'
 #' # Functional clustering with respect to joined "st" difference measure
@@ -98,7 +98,7 @@ fclustering <- function(curve_sets, k, type = c("area", "st", "erl", "cont"), tr
     curve_sets <- list(curve_sets) # Make a list of a single curve_set to treat it similarly as several sets of curves
   }
   # Convert (e.g. fdata) to curve_sets and check the content
-  curve_sets <- lapply(curve_sets, FUN=convert_to_curveset)
+  curve_sets <- lapply(curve_sets, FUN=as.curve_set)
   if(any(sapply(curve_sets, FUN=curve_set_is1obs))) stop("Some or all sets of curves have one observed function.")
   # Check consistency of the given curve sets
   checkequal <- function(f) {
@@ -269,7 +269,7 @@ plot.fclust <- function(x, plotstyle = c("marginal", "joined"), coverage = 0.5,
       for(i in 1:k) { # For all groups (within each set of curves)
         # Calculate the central regions for each cluster
         clusteri <- subset(csets[[j]], resultpamT==i)
-        if(nis[i] > 3) { # At least 3 functions
+        if(nis[i] > 3 && !IsNfuncTooSmall(Nfunc=nis[i], alpha=1-coverage)) { # At least 3 functions
           cr[[i]] <- central_region(clusteri, type=type, coverage=coverage)
         }
         else {
@@ -285,7 +285,7 @@ plot.fclust <- function(x, plotstyle = c("marginal", "joined"), coverage = 0.5,
     cr <- vector("list", k)
     ff <- vector("list", k)
     for(i in 1:k) { # Calculate the central regions for each cluster
-      if(nis[i] > 3) {
+      if(nis[i] > 3 && !IsNfuncTooSmall(Nfunc=nis[i], alpha=1-coverage)) {
         clusteri <- lapply(csets, FUN=subset, subset=resultpamT==i) # Curves for the group i
         cr[[i]] <- central_region(clusteri, type=type, coverage=coverage, nstep=nstep) # Joint central region for the group i
         # Redefine the central curve to be the medoid

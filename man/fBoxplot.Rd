@@ -7,7 +7,9 @@
 fBoxplot(curve_sets, factor = 1.5, coverage = 0.5, ...)
 }
 \arguments{
-\item{curve_sets}{A \code{curve_set} object or a list of \code{curve_set} objects.}
+\item{curve_sets}{A \code{\link{curve_set}} object or a list of \code{\link{curve_set}} objects.
+Also \code{envelope} objects of \pkg{spatstat} and \code{fdata} of \pkg{fda.usc}
+are accepted instead of curve_set objects.}
 
 \item{factor}{The constant factor to inflate the central region to produce a functional boxplot and
 determine fences for outliers. Default is 1.5 as in a classical boxplot.}
@@ -28,14 +30,14 @@ if(requireNamespace("fda", quietly=TRUE)) {
   years <- paste(1:18)
   curves <- fda::growth[['hgtf']][years,]
   # Heights
-  cset1 <- create_curve_set(list(r = as.numeric(years),
-                                 obs = curves))
+  cset1 <- curve_set(r = as.numeric(years),
+                     obs = curves)
   bp <- fBoxplot(cset1, coverage=0.50, type="area", factor=1)
   plot(bp)
 
   # Considering simultaneously heights and height differences
-  cset2 <- create_curve_set(list(r = as.numeric(years[-1]),
-             obs = curves[-1,] - curves[-nrow(curves),]))
+  cset2 <- curve_set(r = as.numeric(years[-1]),
+                     obs = curves[-1,] - curves[-nrow(curves),])
   csets <- list(Height=cset1, Change=cset2)
   res <- fBoxplot(csets, type='area', factor=1.5)
   plot(res) + ggplot2::labs(x="Age (years)", y="")

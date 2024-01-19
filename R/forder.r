@@ -84,7 +84,7 @@ individual_partial_forder <- function(curve_set, measure = c('erl', 'rank', 'con
                                       alternative, erlhistn=0) {
   measure <- match.arg(measure)
 
-  curve_set <- convert_to_curveset(curve_set, allfinite=TRUE)
+  curve_set <- as.curve_set(curve_set, allfinite=TRUE)
 
   all_curves <- data_and_sim_curves(curve_set)
   nr <- curve_set_narg(curve_set)
@@ -138,7 +138,7 @@ individual_forder <- function(curve_set,
   possible_measures <- c('rank', 'erl', 'cont', 'area', 'max', 'int', 'int2')
   if(!(measure %in% possible_measures)) stop("Unreasonable measure argument!")
 
-  curve_set <- convert_to_curveset(curve_set, allfinite=TRUE)
+  curve_set <- as.curve_set(curve_set, allfinite=TRUE)
 
   if(measure %in% c('max', 'int', 'int2')) {
     curve_set <- residual(curve_set, use_theo = use_theo)
@@ -289,8 +289,7 @@ combined_forder <- function(curve_sets, ...) {
 #' from the most extreme to least extreme one
 #'
 #'
-#' Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
-#' or an \code{envelope} object of \pkg{spatstat},
+#' Given a \code{\link{curve_set}} object or an \code{envelope} object of \pkg{spatstat},
 #' which contains curves \eqn{T_1(r),\dots,T_s(r)}{T_1(r),...,T_s(r)},
 #' the functions are ordered from the most extreme one to the least extreme one
 #' by one of the following measures (specified by the argument \code{measure}).
@@ -336,7 +335,9 @@ combined_forder <- function(curve_sets, ...) {
 #' in the curve set. If the component \code{obs} in the curve set is a vector, then its measure
 #' will be the first component (named 'obs') in the returned vector.
 #'
-#' @param curve_sets A \code{curve_set} object or a list of \code{curve_set} objects.
+#' @param curve_sets A \code{\link{curve_set}} object or a list of \code{\link{curve_set}} objects.
+#' Also \code{envelope} objects of \pkg{spatstat} and \code{fdata} of \pkg{fda.usc}
+#' are accepted instead of curve_set objects.
 #' @param measure The measure to use to order the functions from the most extreme to the least extreme
 #' one. Must be one of the following: 'rank', 'erl', 'cont', 'area', 'max', 'int', 'int2'. Default is 'erl'.
 #' @param scaling The name of the scaling to use if measure is 'max', 'int' or 'int2'.
@@ -376,10 +377,10 @@ combined_forder <- function(curve_sets, ...) {
 #'   # for the differences within the years
 #'   years <- paste(1:18)
 #'   curves <- fda::growth[['hgtf']][years,]
-#'   cset1 <- create_curve_set(list(r = as.numeric(years),
-#'                                  obs = curves))
-#'   cset2 <- create_curve_set(list(r = as.numeric(years[-1]),
-#'                                  obs = curves[-1,] - curves[-nrow(curves),]))
+#'   cset1 <- curve_set(r = as.numeric(years),
+#'                      obs = curves)
+#'   cset2 <- curve_set(r = as.numeric(years[-1]),
+#'                      obs = curves[-1,] - curves[-nrow(curves),])
 #'
 #'   # Order the girls from most extreme one to the least extreme one, below using the 'area' measure
 #'   # a) according to their heights

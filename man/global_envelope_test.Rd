@@ -6,29 +6,35 @@
 \usage{
 global_envelope_test(
   curve_sets,
-  type = "erl",
+  typeone = c("fwer", "fdr"),
   alpha = 0.05,
   alternative = c("two.sided", "less", "greater"),
+  type = "erl",
+  algorithm = c("IATSE", "ATSE"),
   ties = "erl",
   probs = c(0.025, 0.975),
   quantile.type = 7,
   central = "mean",
   nstep = 2,
-  ...
+  ...,
+  lower = NULL,
+  upper = NULL
 )
 }
 \arguments{
-\item{curve_sets}{A \code{curve_set} (see \code{\link{create_curve_set}})
-or an \code{envelope} object of \pkg{spatstat} containing a data function and simulated functions.
+\item{curve_sets}{A \code{\link{curve_set}} object or a list of \code{\link{curve_set}}
+objects containing a data function and simulated functions from which the envelope is
+to be constructed.
+Also \code{envelope} objects of \pkg{spatstat} are accepted instead of curve_set objects.
 If an envelope object is given, it must contain the summary
-functions from the simulated patterns which can be achieved by setting
-\code{savefuns = TRUE} when calling the \code{envelope} function.
-Alternatively, a list of \code{curve_set} or \code{envelope} objects can be given.}
+functions from simulated patterns which can be achieved by setting
+\code{savefuns = TRUE} when calling the \code{envelope} function.}
 
-\item{type}{The type of the global envelope with current options for 'rank', 'erl', 'cont', 'area',
-'qdir', 'st' and 'unscaled'. See details.}
+\item{typeone}{Character string indicating which type I error rate to control,
+either the family-wise error rate ('fwer') or false discovery rate ('fdr').}
 
-\item{alpha}{The significance level. The 100(1-alpha)\% global envelope will be calculated.
+\item{alpha}{The significance level. The 100(1-alpha)\% global envelope will be calculated
+under the 'fwer' or 'fdr' control.
 If a vector of values is provided, the global envelopes are calculated for each value.}
 
 \item{alternative}{A character string specifying the alternative hypothesis.
@@ -36,7 +42,15 @@ Must be one of the following: "two.sided" (default), "less" or "greater".
 The last two options only available for types \code{'rank'}, \code{'erl'},
 \code{'cont'} and \code{'area'}.}
 
-\item{ties}{The method to obtain a unique p-value when  \code{type = 'rank'}.
+\item{type}{The type of the global envelope with current options for 'rank', 'erl', 'cont', 'area',
+'qdir', 'st' and 'unscaled'. See details.}
+
+\item{algorithm}{The algorithm for the computation of the FDR envelope.
+Either "IATSE" or "ATSE" standing for the iteratively adaptive two-stage
+envelope and the adaptive two-stage envelope, respectively, see Mrkvička and Myllymäki (2023).}
+
+\item{ties}{The method to obtain a unique p-value when \code{typeone = 'fwer'} and \code{type = 'rank'};
+otherwise ignored.
 Possible values are 'midrank', 'random', 'conservative', 'liberal' and 'erl'.
 For 'conservative' the resulting p-value will be the highest possible.
 For 'liberal' the p-value will be the lowest possible.
@@ -61,11 +75,20 @@ For 'qdir', 'st' and 'unscaled' only the mean is allowed as an option, due to th
 \item{nstep}{1 or 2 for how to contruct a combined global envelope if list of curve sets
 is provided. 2 (default) for a two-step combining procedure, 1 for one-step.}
 
-\item{...}{Additional parameters to be passed to \code{\link{central_region}}.}
+\item{...}{Additional parameters to be passed to \code{\link{central_region}} for the computation
+of the 'fwer' envelope.}
+
+\item{lower}{A single number (or a vector of suitable length) giving a lower bound
+for the functions. Used only for the extension of the FDR envelope.}
+
+\item{upper}{A single number (or a vector of suitable length) giving an upper bound
+for the functions. Used only for the extension of the FDR envelope.}
 }
 \value{
 Either an object of class "global_envelope" or "combined_global_envelope",
 similarly as the objects returned by \code{\link{central_region}}.
+Further, if \code{typeone = "fdr"}, the objects have the further class
+"fdr_envelope" or "combined_fdr_envelope".
 
 The \code{global_envelope} is essentially a data frame containing columns
 \itemize{
@@ -79,7 +102,7 @@ The \code{global_envelope} is essentially a data frame containing columns
 Moreover, the returned object has the same attributes as the \code{global_envelope} object returned by
 \code{\link{central_region}} and in addition
 \itemize{
-  \item p = A point estimate for the p-value (default is the mid-rank p-value).
+  \item p = the p-value of the test
 }
 and in the case that \code{type = 'rank'} also
 \itemize{
@@ -97,15 +120,26 @@ The 2d classes are attached as described in \code{\link{central_region}}.
 Global envelope test, global envelopes and p-values
 }
 \details{
-Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
+Given a \code{\link{curve_set}} object,
 or an \code{envelope} object of \pkg{spatstat},
 which contains both the data curve (or function or vector) \eqn{T_1(r)}{T_1(r)}
 (in the component \code{obs}) and
 the simulated curves \eqn{T_2(r),\dots,T_{s+1}(r)}{T_2(r),...,T_(s+1)(r)}
 (in the component \code{sim_m}),
-the function \code{global_envelope_test} performs a global envelope test.
-The functionality of the function is rather similar to the function
-\code{\link{central_region}}, but in addition to ordering the functions from
+the function \code{global_envelope_test} performs a global envelope test,
+either under the control of family-wise error rate (FWER) or false discovery rate (FDR),
+as specified by the argument \code{typeone}.
+The function \code{global_envelope_test} is the main function for global envelope tests
+(for simple hypotheses).
+
+The case \code{typeone = "fdr"} corresponds to the FDR envelopes proposed by
+Mrkvička and Myllymäki (2023). See details in \code{\link{fdr_envelope}} and
+in the vignette \code{vignette("FDRenvelopes")}. Note there also the arguments that are
+the relevant ones for the FDR envelope specification.
+The descriptions below concern the FWER envelopes.
+
+If \code{typeone = "fwer"}, the functionality of the function is rather similar to the
+function \code{\link{central_region}}, but in addition to ordering the functions from
 the most extreme one to the least extreme one using different measures
 and providing the global envelopes with intrinsic
 graphical interpretation, p-values are calculated for the test.
@@ -113,20 +147,18 @@ Thus, while \code{\link{central_region}} can be used to construct global
 envelopes in a general setting, the function \code{\link{global_envelope_test}}
 is devoted to testing as its name suggests.
 
-The function \code{global_envelope_test} is the main function for global envelope tests
-(for simple hypotheses).
-Different \code{type} of global envelope tests can be performed.
+Different \code{type} of global envelope tests under the control of FWER can be computed.
 We use such ordering of the functions for which we are able to construct global
-envelopes with intrinsic graphical interpretation.
+envelopes with intrinsic graphical interpretation (IGI, see Myllymäki and Mrkvička, 2023).
 \itemize{
   \item \code{'rank'}: the completely non-parametric rank envelope test (Myllymäki et al., 2017)
   based on minimum of pointwise ranks
   \item \code{'erl'}: the completely non-parametric rank envelope test based on extreme rank lengths
   (Myllymäki et al., 2017; Mrkvička et al., 2018) based on number of minimal pointwise ranks
  \item \code{'cont'}: the completely non-parametric rank envelope test based on continuous rank
- (Hahn, 2015; Mrkvička et al., 2019) based on minimum of continuous pointwise ranks
+ (Hahn, 2015; Mrkvička et al., 2022) based on minimum of continuous pointwise ranks
  \item \code{'area'}: the completely non-parametric rank envelope test based on area rank
- (Mrkvička et al., 2019) based on area between continuous pointwise ranks and minimum
+ (Mrkvička et al., 2022) based on area between continuous pointwise ranks and minimum
  pointwise ranks for those argument (r) values for which pointwise ranks achieve the minimum
  (it is a combination of erl and cont)
   \item "qdir", the directional quantile envelope test, protected against unequal variance and
@@ -138,7 +170,7 @@ envelopes with intrinsic graphical interpretation.
 }
 The first four types are global rank envelopes.
 The \code{'rank'} envelope test is a completely non-parametric test,
-which provides the 100(1-alpha)% global envelope for the chosen test function
+which provides the 100(1-alpha)\% global envelope for the chosen test function
 T(r) on the chosen interval of distances and associated p-values.
 The other three are modifications of \code{'rank'} to treat the ties in
 the extreme rank ordering on which the \code{'rank'} test is based on.
@@ -148,10 +180,12 @@ distances r. Thus, it suffers from unequal variance of T(r) over the distances r
 from the asymmetry of distribution of T(r). We recommend to use the other global
 envelope tests available. The unscaled envelope is provided as a reference.
 
-See Myllymäki and Mrkvička (2020, Section 2.), i.e. \code{vignette("GET")}, for more detailed description of the measures and
-the corresponding envelopes.
+See Myllymäki and Mrkvička (2023, Appendix.), i.e. \code{vignette("GET")}, for more detailed
+description of the measures and the corresponding envelopes.
 
 See \code{vignette("pointpatterns")} for examples of point pattern analyses.
+See \code{vignette("FDRenvelopes")} for examples of FDR envelopes obtained by
+\code{typeone = "fdr"}.
 }
 \section{Procedure}{
 
@@ -234,7 +268,7 @@ if(require("spatstat.explore", quietly=TRUE)) {
     sim[, i] <- Lest(sim.X, correction="translate", r=r)[['trans']] - r
   }
   # Create a curve_set containing argument values, observed and simulated functions
-  cset <- create_curve_set(list(r=r, obs=obs, sim_m=sim))
+  cset <- curve_set(r=r, obs=obs, sim=sim)
   # Perform the test
   res <- global_envelope_test(cset, type="erl")
   plot(res) + ggplot2::ylab(expression(italic(hat(L)(r)-r)))
@@ -321,13 +355,13 @@ if(requireNamespace("mvtnorm", quietly=TRUE)) {
   # Test the null hypothesis is that X is from the distribution of Y's (or if it is an outlier).
 
   # Case 1. The test vector is (X_1, X_2)
-  cset1 <- create_curve_set(list(r=1:2, obs=as.vector(X), sim_m=t(Y)))
+  cset1 <- curve_set(r=1:2, obs=as.vector(X), sim=t(Y))
   res1 <- global_envelope_test(cset1)
   plot(res1)
 
   # Case 2. The test vector is (X_1, X_2, (X_1-mean(Y_1))*(X_2-mean(Y_2))).
   t3 <- function(x, y) { (x[,1]-mean(y[,1]))*(x[,2]-mean(y[,2])) }
-  cset2 <- create_curve_set(list(r=1:3, obs=c(X[,1],X[,2],t3(X,Y)), sim_m=rbind(t(Y), t3(Y,Y))))
+  cset2 <- curve_set(r=1:3, obs=c(X[,1],X[,2],t3(X,Y)), sim=rbind(t(Y), t3(Y,Y)))
   res2 <- global_envelope_test(cset2)
   plot(res2)
 }
@@ -339,11 +373,13 @@ Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA tes
 
 Mrkvička, T., Myllymäki, M., Kuronen, M. and Narisetty, N. N. (2022) New methods for multiple testing in permutation inference for the general linear model. Statistics in Medicine 41(2), 276-297. doi: 10.1002/sim.9236
 
+Mrkvička and Myllymäki (2023). False discovery rate envelopes. Statistics and Computing 33, 109. https://doi.org/10.1007/s11222-023-10275-7
+
 Myllymäki, M., Grabarnik, P., Seijo, H. and Stoyan. D. (2015). Deviation test construction and power comparison for marked spatial point patterns. Spatial Statistics 11, 19-34. doi: 10.1016/j.spasta.2014.11.004
 
 Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology) 79, 381–404. doi: 10.1111/rssb.12172
 
-Myllymäki, M. and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]
+Myllymäki, M. and Mrkvička, T. (2023). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME] https://doi.org/10.48550/arXiv.1911.06583
 
 Ripley, B.D. (1981). Spatial statistics. Wiley, New Jersey.
 }

@@ -218,17 +218,9 @@ get_pi0est <- function(algorithm, alternative, nsim, nr) {
          },
          IATSE = {
            function(r1, gamma=NULL) { # r1 & gamma from step1
-             pi0 <- NULL
              if(alternative == "two.sided") gammastar <- 2*gamma/nsim
              else gammastar <- gamma/nsim
-             pi0[1] <- min(1, (nr-r1+nr*gammastar)/nr)
-             pi0[2] <- min(1, (nr-r1+pi0[1]*nr*gammastar)/nr)
-             j <- 2
-             while(pi0[j-1]-pi0[j] > 10^-10) {
-               j <- j+1
-               pi0[j] <- min(1, (nr-r1+pi0[j-1]*nr*gammastar)/nr)
-             }
-             pi0
+             min(1, ((nr-r1)/nr) / (1-gammastar))
            }
          })
 }
@@ -336,17 +328,21 @@ individual_fdr_envelope <- function(curve_set, alpha = 0.05,
 #' of Mrkvička and Myllymäki (2023).
 #'
 #'
-#' @param curve_sets A \code{curve_set} (see \code{\link{create_curve_set}}) or an
-#'   \code{envelope} object of \pkg{spatstat} containing the observed function
-#'   and the functions from which the envelope is to be constructed.
-#'   Alternatively, a list of appropriate objects can be given.
-#' @param algorithm Either "IATSE" or "ATSE" standing for the iteratively adaptive two-stage
+#' Typical use of this function is through other functions.
+#' \code{fdr_envelope(cset)} is the same as \code{global_envelope_test(cset, typeone = "fdr")}.
+#' Functions such as \code{\link{graph.fanova}}, \code{\link{graph.flm}}, \code{\link{frank.flm}}
+#' allow to use the FDR control by specifying \code{typeone = "fdr"} appropriately
+#' (passing this to \code{global_envelope_test}).
+#'
+#' @inheritParams global_envelope_test
+#' @inheritParams forder
+#' @param algorithm The algorithm for the computation of the FDR envelope.
+#' Either "IATSE" or "ATSE" standing for the iteratively adaptive two-stage
 #' envelope and the adaptive two-stage envelope, respectively, see Mrkvička and Myllymäki (2023).
 #' @param lower A single number (or a vector of suitable length) giving a lower bound
-#' for the functions. Used only for the extension, see Mrkvička and Myllymäki (2023, p. 6).
+#' for the functions. Used only for the extension of the FDR envelope.
 #' @param upper A single number (or a vector of suitable length) giving an upper bound
-#' for the functions.
-#' @inheritParams global_envelope_test
+#' for the functions. Used only for the extension of the FDR envelope.
 #' @export
 #' @references
 #' Mrkvička and Myllymäki (2023). False discovery rate envelopes. Statistics and Computing 33, 109. https://doi.org/10.1007/s11222-023-10275-7
@@ -358,9 +354,9 @@ individual_fdr_envelope <- function(curve_set, alpha = 0.05,
 #' res <- graph.flm(nsim=nsim,
 #'                  formula.full = Y~Year,
 #'                  formula.reduced = Y~1,
-#'                  typeone = "fdr",
 #'                  curve_sets = list(Y=rimov),
-#'                  factors = data.frame(Year = 1979:2014))
+#'                  factors = data.frame(Year = 1979:2014),
+#'                  GET.args = list(typeone = "fdr"))
 #' plot(res)
 #'
 fdr_envelope <- function(curve_sets, alpha = 0.05,

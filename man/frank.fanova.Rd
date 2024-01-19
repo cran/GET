@@ -8,7 +8,6 @@ frank.fanova(
   nsim,
   curve_set,
   groups,
-  typeone = c("fwer", "fdr"),
   variances = "equal",
   test.equality = c("mean", "var", "cov"),
   cov.lag = 1,
@@ -19,18 +18,12 @@ frank.fanova(
 \arguments{
 \item{nsim}{The number of random permutations.}
 
-\item{curve_set}{The original data (an array of functions) provided as a \code{curve_set} object
-(see \code{\link{create_curve_set}}) or a fdata object (see \code{\link[fda.usc]{fdata}}).
+\item{curve_set}{The original data (an array of functions) provided as a
+\code{\link{curve_set}} object or a \code{fdata} object of \pkg{fda.usc}.
 The curve set should include the argument values for the functions in the component \code{r}, and
 the observed functions in the component \code{obs}.}
 
 \item{groups}{The original groups (a factor vector representing the assignment to groups).}
-
-\item{typeone}{Character string indicating which type I error rate to control,
-either the familywise error rate ('fwer') or false discovery rate ('fdr').
-Further arguments to the FWER or FDR envelope can be passed in argument \code{GET.args}.
-If 'fwer', the type of the envelope can be chosen by specifying the argument \code{type}
-in \code{GET.args}.}
 
 \item{variances}{Either "equal" or "unequal". If "equal", then the traditional F-values are used.
 If "unequal", then the corrected F-values are used. The current implementation uses
@@ -53,8 +46,13 @@ see \code{test.equality}.}
 \item{savefuns}{Logical. If TRUE, then the functions from permutations are saved to the attribute
 simfuns.}
 
-\item{...}{Additional parameters to be passed to \code{\link{global_envelope_test}} (if \code{typeone = "fwer"})
-or \code{\link{fdr_envelope}} (if \code{typeone = "fdr"}).}
+\item{...}{Additional parameters to be passed to \code{\link{global_envelope_test}}.
+For example, the type of multiple testing control, FWER or FDR must be set by \code{typeone}.
+And, if \code{typeone = "fwer"}, the type of the global envelope can be chosen by
+specifying the argument \code{type}. See \code{\link{global_envelope_test}}
+for the defaults and available options.
+(The test here uses \code{alternative="two.sided"} and \code{nstep=1} (when relevant),
+but all the other specifications are to be given in \code{...}.)}
 }
 \description{
 A one-way functional ANOVA based on the rank envelope applied to F values

@@ -62,7 +62,8 @@ fdata_to_curve_set <- function(fdata, ...) {
 # values (allfinite=FALSE), e.g., in an \code{envelope} object of \pkg{spatstat}
 # at the first place, if those are cropped away later (in \code{\link{crop_curves}})
 # for analyses.
-check_curve_set_content <- function(curve_set, allfinite=TRUE) {
+# @param ... Ignored.
+check_curve_set_content <- function(curve_set, allfinite=TRUE, ...) {
   allow_Inf_values <- !allfinite
   if(inherits(curve_set, "curve_set")) {
     if(!allow_Inf_values) {
@@ -219,8 +220,22 @@ is_a_single_curveset <- function(curve_set) {
   inherits(curve_set, c('curve_set', 'envelope', 'fdata'))
 }
 
-# Convert an envelope or fdata object to a curve_set object.
-convert_to_curveset <- function(curve_set, ...) {
+#' Convert an envelope or fdata object to a curve_set object
+#'
+#' If given an envelope object of \pkg{spatstat} or a \code{fdata} object of
+#' \pkg{fda.usc}, convert it into a curve_set object. If given a curve_set
+#' object, check its correctness and give it back.
+#'
+#' @param curve_set An object to be converted to a \code{\link{curve_set}} object.
+#' The \code{envelope} objects of \pkg{spatstat} and \code{fdata} objects of
+#' \pkg{fda.usc} are supported currently, besides curve_set objects.
+#' @param ... Allows passing arguments to \code{\link{create_curve_set}}.
+#' @return If an \code{envelope} object of \pkg{spatstat} or an
+#' \code{\link[fda.usc]{fdata}} object is given, return a corresponding
+#' curve_set object. If a curve_set object was given, check it and return it
+#' unharmed.
+#' @export
+as.curve_set <- function(curve_set, ...) {
   if(inherits(curve_set, 'envelope')) {
     curve_set <- envelope_to_curve_set(curve_set, ...)
   } else if(inherits(curve_set, 'fdata')) {
@@ -228,6 +243,8 @@ convert_to_curveset <- function(curve_set, ...) {
   } else if(!inherits(curve_set, 'curve_set')) {
     stop('curve_set must either have class "envelope" (from spatstat) ',
          'or "fdata" (from fda.usc) or "curve_set".')
+  } else {
+    curve_set <- check_curve_set_content(curve_set, ...)
   }
   curve_set
 }
@@ -243,14 +260,14 @@ check_residualness <- function(curve_set) {
 
 #' Create a curve_set object
 #'
-#' Create a curve_set object out of a list in the right form.
+#' Create a curve_set object out of data provided in the right form.
 #'
 #'
-#' The function is used to clump together the functional data in the form
+#' The functions are used to clump together the functional data in the form
 #' that can be handled by the other \pkg{GET} functions (\code{\link{forder}},
 #' \code{\link{central_region}}, \code{\link{global_envelope_test}} etc.).
-#' The function \code{create_curve_set} takes care of checking the content of
-#' the data, and saves relevant information of the curves for global envelope
+#' The functions take care of checking the content of the data,
+#' and save relevant information of the curves for global envelope
 #' methods to be used in particular for plotting the results with graphical
 #' interpretation.
 #'
@@ -258,8 +275,18 @@ check_residualness <- function(curve_set) {
 #' \itemize{
 #' \item a vector containing the data function/vector, or
 #' \item a matrix containing the s data functions/vectors, in which case it is assumed that
-#' each column corresponds to a data function/vector.
+#' each column corresponds to a data function/vector, or
+#' \item a list containing the s data functions/vectors.
 #' }
+#'
+#' If \code{obs} is a vector, \code{sim} must be either
+#' \itemize{
+#' \item a matrix containing the simulated functions/vectors, each column
+#' corresponding to a function/vector and the number of rows matching the length
+#' of \code{obs}, or
+#' \item a list containing the simulated functions/vectors.
+#' }
+#' If \code{obs} is a matrix or a list, \code{sim} is ignored.
 #'
 #' If given, \code{r} describes the 1- or 2-dimensional argument values where the functions/vectors
 #' have been observed (or simulated). It must be either
@@ -271,20 +298,19 @@ check_residualness <- function(curve_set) {
 #' coordinates of the pixels where the data have been observed.
 #' }
 #'
-#' If \code{obs} is a vector, \code{sim_m} must be a matrix containing the simulated functions.
-#' Each column is assumed to correspond to a function, and the number of rows must match the
-#' length of \code{obs}. If \code{obs} is a matrix, \code{sim_m} is ignored.
-#'
 #' If \code{obs} is a vector, \code{theo} can be given and it should then correspond
-#' to a theoretical function (e.g., under the null hypothesis). If present, its length must match the length of
-#' \code{obs}.
-#' @param curve_set A list containing the element obs, and optionally
-#'   the elements r, sim_m and theo. See details.
+#' to a theoretical function (e.g., under the null hypothesis). If present, its
+#' length must match the length of \code{obs}.
+#'
+#' @param obs The observed data. See details.
+#' @param sim The simulated data. See details.
+#' @param r The argument values where the functions/vectors have been observed (or simulated). See details.
+#' @param theo The theoretical function. See details.
 #' @param allfinite Logical. TRUE requires that all values of the curves must be
 #' finite (not infinite and not missing, see \code{\link{is.finite}}). FALSE
 #' allows for infinite or missing values in the curves. These infinite and missing
 #' values can have consequences for the subsequent analyses. A warning is given
-#' if infinite or missing values exists.
+#' if infinite or missing values exists (when \code{verbose = TRUE}).
 #' @param verbose Logical flag indicating whether to warn about the content.
 #' @return An object of class \code{curve_set} containing the data.
 #' If the argument values are two-dimensional, then the \code{curve_set} is additionally
@@ -293,13 +319,38 @@ check_residualness <- function(curve_set) {
 #' @seealso \code{\link{plot.curve_set}}, \code{\link{plot.curve_set2d}}
 #' @examples
 #' # 1d
-#' cset <- create_curve_set(list(r = 1:10, obs = matrix(runif(10*5), ncol=5)))
+#' cset <- curve_set(r = 1:10, obs = matrix(runif(10*5), ncol=5))
 #' plot(cset)
 #' # 2d
-#' cset <- create_curve_set(list(r = data.frame(x=c(rep(1:3, 3), 4), y=c(rep(1:3, each=3), 1),
-#'                                            width=1, height=1),
-#'                               obs = matrix(runif(10*5), ncol=5)))
+#' cset <- curve_set(r = data.frame(x=c(rep(1:3, 3), 4), y=c(rep(1:3, each=3), 1),
+#'                                  width=1, height=1),
+#'                   obs = matrix(runif(10*5), ncol=5))
 #' plot(cset)
+curve_set <- function(obs, sim=NULL, r=NULL, theo=NULL, allfinite = FALSE, verbose = TRUE) {
+  if(is.list(obs) && !is.null(obs$obs)) {
+    curve_set <- obs
+  } else {
+    if(is.list(sim)) {
+      ns <- sapply(sim, FUN=length, simplify=TRUE)
+      if(all(ns==ns[1])) sim <- do.call(cbind, sim)
+      else stop("All elements of sim should have equal length.")
+    }
+    if(is.list(obs)) {
+      ns <- sapply(obs, FUN=length, simplify=TRUE)
+      if(all(ns==ns[1])) obs <- do.call(cbind, obs)
+      else stop("All elements of obs should have equal length.")
+    }
+    curve_set <- list(obs=obs, sim_m=sim, r=r, theo=theo)
+  }
+  create_curve_set(curve_set, allfinite=allfinite, verbose=verbose)
+}
+
+# create_curve_set from a list of components
+#' @param curve_set A list containing the element obs, and optionally
+#' the elements r, sim_m (same as sim, but in matrix format only) and theo.
+#' See details.
+#' @rdname curve_set
+#' @export
 create_curve_set <- function(curve_set, allfinite = FALSE, verbose = TRUE) {
   check_curve_set_content(curve_set, allfinite)
   is1obs <- is.vector(curve_set[['obs']])
@@ -373,7 +424,7 @@ print.curve_set <- function(x, ...) {
 #' @importFrom ggplot2 ggplot geom_line aes_ scale_color_manual labs
 #' @importFrom viridisLite viridis
 #' @examples
-#' cset <- create_curve_set(list(r = 1:10, obs = matrix(runif(10*5), ncol=5)))
+#' cset <- curve_set(r = 1:10, obs = matrix(runif(10*5), ncol=5))
 #' plot(cset)
 #' # Highlight some functions
 #' plot(cset, idx=c(1,3))
@@ -387,8 +438,8 @@ print.curve_set <- function(x, ...) {
 #' plot(cset) + ggplot2::labs(title="Example curves", x="x", y="Value")
 #' # A curve_set with one observed function (other simulated)
 #' if(requireNamespace("mvtnorm", quietly=TRUE)) {
-#'   cset <- create_curve_set(list(obs = c(-1.6, 1.6),
-#'             sim_m = t(mvtnorm::rmvnorm(200, c(0,0), matrix(c(1,0.5,0.5,1), 2, 2)))))
+#'   cset <- curve_set(obs = c(-1.6, 1.6),
+#'     sim = t(mvtnorm::rmvnorm(200, c(0,0), matrix(c(1,0.5,0.5,1), 2, 2))))
 #'   plot(cset)
 #'   # Remove legend
 #'   plot(cset) + ggplot2::theme(legend.position="none")
@@ -514,7 +565,7 @@ combine_curve_sets <- function(x, equalr = TRUE) {
 # Check that the curve sets have same elements and dimensions of them (numbers of r-values can differ for equalr=FALSE).
 # @inheritParams combine_curve_sets
 check_curve_set_dimensions <- function(x, equalr=FALSE) {
-  x <- lapply(x, FUN=convert_to_curveset)
+  x <- lapply(x, FUN=as.curve_set)
   checkequal <- function(f) {
     all(sapply(x, FUN=function(curve_set) { f(curve_set) == f(x[[1]]) }))
   }
@@ -660,8 +711,7 @@ curve_set_1obs <- function(curve_set) {
 #'   Friday <- poblenou$df$day.festive == 0 & poblenou$df$day.week == 5
 #'
 #'   # Data as a curve_set
-#'   cset <- create_curve_set(list(r=0:23,
-#'              obs=t(poblenou[['nox']][['data']])))
+#'   cset <- curve_set(r=0:23, obs=t(poblenou[['nox']][['data']]))
 #'   plot(subset(cset, MonThu))
 #'   plot(subset(cset, Friday))
 #'   plot(subset(cset, Free))

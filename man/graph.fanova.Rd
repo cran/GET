@@ -8,7 +8,6 @@ graph.fanova(
   nsim,
   curve_set,
   groups,
-  typeone = c("fwer", "fdr"),
   variances = "equal",
   contrasts = FALSE,
   n.aver = 1L,
@@ -22,18 +21,12 @@ graph.fanova(
 \arguments{
 \item{nsim}{The number of random permutations.}
 
-\item{curve_set}{The original data (an array of functions) provided as a \code{curve_set} object
-(see \code{\link{create_curve_set}}) or a fdata object (see \code{\link[fda.usc]{fdata}}).
+\item{curve_set}{The original data (an array of functions) provided as a
+\code{\link{curve_set}} object or a \code{fdata} object of \pkg{fda.usc}.
 The curve set should include the argument values for the functions in the component \code{r}, and
 the observed functions in the component \code{obs}.}
 
 \item{groups}{The original groups (a factor vector representing the assignment to groups).}
-
-\item{typeone}{Character string indicating which type I error rate to control,
-either the familywise error rate ('fwer') or false discovery rate ('fdr').
-Further arguments to the FWER or FDR envelope can be passed in argument \code{GET.args}.
-If 'fwer', the type of the envelope can be chosen by specifying the argument \code{type}
-in \code{GET.args}.}
 
 \item{variances}{Either "equal" or "unequal". If "unequal", then correction for unequal variances
 as explained in details will be done. Only relevant for the case \code{test.equality = "means"} (default).}
@@ -65,8 +58,13 @@ See Mrkvicka et al. (2020) for more details.}
 \item{cov.lag}{The lag of the covariance for testing the equality of covariances,
 see \code{test.equality}.}
 
-\item{...}{Additional parameters to be passed to \code{\link{global_envelope_test}} (if \code{typeone = "fwer"})
-or \code{\link{fdr_envelope}} (if \code{typeone = "fdr"}).}
+\item{...}{Additional parameters to be passed to \code{\link{global_envelope_test}}.
+For example, the type of multiple testing control, FWER or FDR must be set by \code{typeone}.
+And, if \code{typeone = "fwer"}, the type of the global envelope can be chosen by
+specifying the argument \code{type}. See \code{\link{global_envelope_test}}
+for the defaults and available options.
+(The test here uses \code{alternative="two.sided"} and \code{nstep=1} (when relevant),
+but all the other specifications are to be given in \code{...}.)}
 }
 \description{
 One-way ANOVA tests for functional data with graphical interpretation
@@ -121,14 +119,16 @@ if(require("fda.usc", quietly=TRUE)) {
   Type <- factor(Type, levels = c("MonThu", "Fri", "Free"))
 
   # (log) Data as a curve_set
-  cset <- create_curve_set(list(r = 0:23,
-             obs = t(log(poblenou[['nox']][['data']]))))
+  cset <- curve_set(r = 0:23,
+     obs = t(log(poblenou[['nox']][['data']])))
   # Graphical functional ANOVA
   \donttest{nsim <- 2999}
-  \dontshow{nsim <- 19
+  \dontshow{
+  nsim <- 19
   # Decrease the data to reduce time
   cset$funcs <- cset$funcs[, 20:40]
-  Type <- Type[20:40]}
+  Type <- Type[20:40]
+  }
   res.c <- graph.fanova(nsim = nsim, curve_set = cset,
                         groups = Type, variances = "unequal",
                         contrasts = TRUE)
@@ -179,12 +179,8 @@ imageset3$image_set$funcs <- imageset3$image_set$funcs[c(1:3, 52:55, 103), ]
 res <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
                     curve_set = imageset3$image_set,
                     groups = imageset3$Group)
-plot(res)
-# Contrasts
-res.c <- graph.fanova(nsim = 19, # Increase nsim for serious analysis!
-                      curve_set = imageset3$image_set, groups = imageset3$Group,
-                      contrasts = TRUE)
-plot(res.c)
+plot(res, what = c("obs", "lo.sign", "hi.sign"), sign.type = "col")
+
 }
 \references{
 Mrkvička, T., Myllymäki, M., Jilek, M. and Hahn, U. (2020) A one-way ANOVA test for functional data with graphical interpretation. Kybernetika 56 (3), 432-458. doi: 10.14736/kyb-2020-3-0432

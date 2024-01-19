@@ -57,11 +57,12 @@ ecdfcontrasts.m <- function(x, groups, r) {
 #' (n*(n-1)/2)*1000 - 1 for the case \code{contrasts = TRUE},
 #' where n is the length of x.
 #'
-#' @param x A list of numeric vectors, one for each sample.
-#' @param r The sequence of argument values at which the distribution functions are to be compared.
-#' The default is 100 equally spaced values between the minimum and maximum over all groups.
 #' @inheritParams graph.fanova
+#' @param x A list of numeric vectors, one for each sample.
+#' @param r The sequence of argument values at which the test functions are to be compared.
+#' The default is 100 equally spaced values between the minimum and maximum over all groups.
 #' @export
+#' @aliases GET.necdf
 #' @examples
 #' if(require(fda, quietly=TRUE)) {
 #'   # Heights of boys and girls at age 10
@@ -73,16 +74,16 @@ ecdfcontrasts.m <- function(x, groups, r) {
 #'   # Create a list of the data
 #'   fm.list <- list(Girls=f.a, Boys=m.a)
 #'   \donttest{
-#'   res_m <- GET.necdf(fm.list)
+#'   res_m <- GET.distrequal(fm.list)
 #'   plot(res_m)
-#'   res_c <- GET.necdf(fm.list, contrasts=TRUE)
+#'   res_c <- GET.distrequal(fm.list, contrasts=TRUE)
 #'   plot(res_c)
 #'   }
 #'   \dontshow{
 #'   # The test with lower number of simulations
-#'   res_m <- GET.necdf(fm.list, nsim=4, alpha=0.2)
+#'   res_m <- GET.distrequal(fm.list, nsim=4, alpha=0.2)
 #'   plot(res_m)
-#'   res_c <- GET.necdf(fm.list, contrasts=TRUE, nsim=4, alpha=0.2)
+#'   res_c <- GET.distrequal(fm.list, contrasts=TRUE, nsim=4, alpha=0.2)
 #'   plot(res_c)
 #'   }
 #'
@@ -95,20 +96,20 @@ ecdfcontrasts.m <- function(x, groups, r) {
 #'   # Create a list of the data
 #'   fm.list <- list(Girls=f.a, Boys=m.a)
 #'   \donttest{
-#'   res_m <- GET.necdf(fm.list)
+#'   res_m <- GET.distrequal(fm.list)
 #'   plot(res_m)
-#'   res_c <- GET.necdf(fm.list, contrasts=TRUE)
+#'   res_c <- GET.distrequal(fm.list, contrasts=TRUE)
 #'   plot(res_c)
 #'   }
 #'   \dontshow{
 #'   # The test with lower number of simulations
-#'   res_m <- GET.necdf(fm.list, nsim=4, alpha=0.2)
+#'   res_m <- GET.distrequal(fm.list, nsim=4, alpha=0.2)
 #'   plot(res_m)
-#'   res_c <- GET.necdf(fm.list, contrasts=TRUE, nsim=4, alpha=0.2)
+#'   res_c <- GET.distrequal(fm.list, contrasts=TRUE, nsim=4, alpha=0.2)
 #'   plot(res_c)
 #'   }
 #' }
-GET.necdf <- function(x, r = seq(min(unlist((lapply(x, min)))), max(unlist((lapply(x, max)))), length=100),
+GET.distrequal <- function(x, r = seq(min(unlist((lapply(x, min)))), max(unlist((lapply(x, max)))), length=100),
                       contrasts = FALSE, nsim, ...) {
   if(!is.list(x) && length(x)<2) stop("At least two groups should be provided.")
   x.lengths <- as.numeric(lapply(x, FUN = length))
@@ -143,7 +144,7 @@ GET.necdf <- function(x, r = seq(min(unlist((lapply(x, min)))), max(unlist((lapp
                                         sim_m = sim[,i,]))
   }
   names(csets) <- complabels
-  # GET
+  # FWER or FDR envelope
   res <- global_envelope_test(csets, alternative="two.sided", ..., nstep=1)
   if(!contrasts)
     res <- envelope_set_labs(res, xlab = expression(italic(x)),

@@ -7,8 +7,8 @@
 rank_envelope(curve_set, type = "rank", ...)
 }
 \arguments{
-\item{curve_set}{A curve_set (see \code{\link{create_curve_set}}) or an \code{envelope}
-object of \pkg{spatstat}. If an envelope object is given, it must contain the summary
+\item{curve_set}{A \code{\link{curve_set}} object, or an \code{envelope} object of
+\pkg{spatstat}. If an envelope object is given, it must contain the summary
 functions from the simulated patterns which can be achieved by setting
 savefuns = TRUE when calling the function of \pkg{spatstat}.}
 

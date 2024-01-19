@@ -15,7 +15,9 @@ forder(
 )
 }
 \arguments{
-\item{curve_sets}{A \code{curve_set} object or a list of \code{curve_set} objects.}
+\item{curve_sets}{A \code{\link{curve_set}} object or a list of \code{\link{curve_set}} objects.
+Also \code{envelope} objects of \pkg{spatstat} and \code{fdata} of \pkg{fda.usc}
+are accepted instead of curve_set objects.}
 
 \item{measure}{The measure to use to order the functions from the most extreme to the least extreme
 one. Must be one of the following: 'rank', 'erl', 'cont', 'area', 'max', 'int', 'int2'. Default is 'erl'.}
@@ -49,8 +51,7 @@ Calculates different measures for ordering the functions (or vectors)
 from the most extreme to least extreme one
 }
 \details{
-Given a \code{curve_set} (see \code{\link{create_curve_set}} for how to create such an object)
-or an \code{envelope} object of \pkg{spatstat},
+Given a \code{\link{curve_set}} object or an \code{envelope} object of \pkg{spatstat},
 which contains curves \eqn{T_1(r),\dots,T_s(r)}{T_1(r),...,T_s(r)},
 the functions are ordered from the most extreme one to the least extreme one
 by one of the following measures (specified by the argument \code{measure}).
@@ -101,10 +102,10 @@ if(requireNamespace("fda", quietly = TRUE)) {
   # for the differences within the years
   years <- paste(1:18)
   curves <- fda::growth[['hgtf']][years,]
-  cset1 <- create_curve_set(list(r = as.numeric(years),
-                                 obs = curves))
-  cset2 <- create_curve_set(list(r = as.numeric(years[-1]),
-                                 obs = curves[-1,] - curves[-nrow(curves),]))
+  cset1 <- curve_set(r = as.numeric(years),
+                     obs = curves)
+  cset2 <- curve_set(r = as.numeric(years[-1]),
+                     obs = curves[-1,] - curves[-nrow(curves),])
 
   # Order the girls from most extreme one to the least extreme one, below using the 'area' measure
   # a) according to their heights

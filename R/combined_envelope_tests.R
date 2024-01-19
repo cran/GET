@@ -43,7 +43,7 @@ combined_scaled_MAD_bounding_curves <- function(central_curves_ls, max_u, lower_
 
 #' Combined global scaled maximum absolute difference (MAD) envelope tests
 #'
-#' Given a list of 'curve_set' objects (see \code{\link{create_curve_set}}), a combined global scaled (directional quantile
+#' Given a list of \code{\link{curve_set}} objects, a combined global scaled (directional quantile
 #' or studentized) MAD envelope test is performed with the test functions saved in the curve set objects.
 #' Details of this combined test can be found in Mrkvicka et al. (2017).
 #' The implementation of this test is provided here for historical reasons:
@@ -122,7 +122,7 @@ combined_scaled_MAD_envelope_test <- function(curve_sets, type = c("qdir", "st")
     if(ntests <= 1) stop("Number of functions should be at least two.")
     type <- match.arg(type)
     if(!all(sapply(curve_sets, FUN = function(x) { inherits(x, "envelope") }))) {
-      tmp <- lapply(curve_sets, FUN = convert_to_curveset)
+      tmp <- lapply(curve_sets, FUN = as.curve_set)
       if(!all(sapply(tmp, curve_set_is1obs)))
         stop("The curve_set does not contain one observed function. Testing does not make sense.\n Did you want to construct a central region of your data? See the function central_region.")
     }
