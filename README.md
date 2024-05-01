@@ -85,15 +85,17 @@ All vignettes are also available at the package webpage https://cran.r-project.o
 
 ## Branches
 
-Currently three branches are provided in the development version. The main branch of GET is called `master`.
+Currently two branches are provided in the development version. The main branch of GET is called `master`.
 
 The other branches are called `FDR` and `quantileregression`.
 The `FDR` branch includes also the experimental FDR envelopes tested in
 Mrkvička and Myllymäki (2023).
 The main branch includes the FDR envelopes which were found to have good performance in
 Mrkvička and Myllymäki (2023).
-The `quantileregression` branch includes implementation of the global quantile
-regression proposed in Mrkvička et al. (2023a).
+
+We note that the `quantileregression` branch, which included the implementation of
+the global quantile regression proposed in Mrkvička et al. (2023a), was recently
+merger to the `master`.
 
 
 ## References
@@ -156,4 +158,4 @@ Global quantile regression. arXiv:2309.04746 [stat.ME] https://doi.org/10.48550/
 
 Mrkvička T., Kraft S., Blažek V., Myllymäki M. (2023b).
 Hotspot detection on a linear network in the presence of covariates: a case study on road crash data.
-Submitted.
+Available at SSRN: http://dx.doi.org/10.2139/ssrn.4627591
