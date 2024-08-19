@@ -1,6 +1,6 @@
 Package: GET
-Version: 1.0-2
-Date: 2024-05-01
+Version: 1.0-3
+Date: 2024-08-13
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -24,9 +24,9 @@ Authors@R: c(
 Maintainer: Mari Myllymäki <mari.myllymaki@luke.fi>
 Imports: cluster, ggplot2, grDevices, grid, gridExtra, parallel, stats,
         utils, viridisLite
-Suggests: crayon, geoR, gstat, sp, fda, fda.usc, locfit, mvtnorm,
-        patchwork, spatstat.geom, spatstat.explore, spatstat.model,
-        spatstat.linnet, testthat, R.rsp, quantreg
+Suggests: crayon, datasets, geoR, gstat, fda, fda.usc, locfit, mvtnorm,
+        patchwork, quantreg, R.rsp, sp, spatstat.geom,
+        spatstat.explore, spatstat.model, spatstat.linnet, testthat
 Description: Implementation of global envelopes for a set of general d-dimensional vectors T
     in various applications. A 100(1-alpha)% global envelope is a band bounded by two
     vectors such that the probability that T falls outside this envelope in any of the d
@@ -48,15 +48,16 @@ Description: Implementation of global envelopes for a set of general d-dimension
     Myllymäki et al. (2021) <doi:10.1016/j.spasta.2020.100436>,
     Mrkvička et al. (2022) <doi:10.1002/sim.9236>,
     Dai et al. (2022) <doi:10.5772/intechopen.100124>,
-    Dvořák and Mrkvička (2022) <doi:10.1007/s00180-021-01134-y>, and
-    Mrkvička et al. (2023) <doi:10.48550/arXiv.2309.04746>.
+    Dvořák and Mrkvička (2022) <doi:10.1007/s00180-021-01134-y>,
+    Mrkvička et al. (2023) <doi:10.48550/arXiv.2309.04746>, and
+    Konstantinou et al. (2024) <doi: 10.48550/arXiv.2403.01838>.
 License: GPL-3
 RoxygenNote: 7.3.1
 URL: https://github.com/myllym/GET
 BugReports: https://github.com/myllym/GET/issues
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2024-05-01 21:39:02 UTC; 03080687
+Packaged: 2024-08-19 19:32:46 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Mikko Kuronen [ctb],
@@ -67,4 +68,4 @@ Author: Mari Myllymäki [aut, cre],
   Henri Seijo [ctb]
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2024-05-01 22:44:53 UTC
+Date/Publication: 2024-08-19 22:50:11 UTC
