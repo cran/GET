@@ -1,6 +1,6 @@
 Package: GET
-Version: 1.0-3
-Date: 2024-08-13
+Version: 1.0-4
+Date: 2024-11-30
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -38,7 +38,7 @@ Description: Implementation of global envelopes for a set of general d-dimension
     of distribution functions), for central regions of functional or multivariate data (e.g.
     outlier detection, functional boxplot) and for global confidence and prediction bands
     (e.g. confidence band in polynomial regression, Bayesian posterior prediction). See
-    Myllymäki and Mrkvička (2023) <doi:10.48550/arXiv.1911.06583>,
+    Myllymäki and Mrkvička (2024) <doi:10.18637/jss.v111.i03>,
     Myllymäki et al. (2017) <doi:10.1111/rssb.12172>,
     Mrkvička and Myllymäki (2023) <doi:10.1007/s11222-023-10275-7>,
     Mrkvička et al. (2016) <doi:10.1016/j.spasta.2016.04.005>,
@@ -50,14 +50,14 @@ Description: Implementation of global envelopes for a set of general d-dimension
     Dai et al. (2022) <doi:10.5772/intechopen.100124>,
     Dvořák and Mrkvička (2022) <doi:10.1007/s00180-021-01134-y>,
     Mrkvička et al. (2023) <doi:10.48550/arXiv.2309.04746>, and
-    Konstantinou et al. (2024) <doi: 10.48550/arXiv.2403.01838>.
+    Konstantinou et al. (2024) <doi: 10.1007/s00180-024-01569-z>.
 License: GPL-3
 RoxygenNote: 7.3.1
 URL: https://github.com/myllym/GET
 BugReports: https://github.com/myllym/GET/issues
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2024-08-19 19:32:46 UTC; 03080687
+Packaged: 2024-12-01 08:56:10 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Mikko Kuronen [ctb],
@@ -68,4 +68,4 @@ Author: Mari Myllymäki [aut, cre],
   Henri Seijo [ctb]
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2024-08-19 22:50:11 UTC
+Date/Publication: 2024-12-02 10:20:02 UTC

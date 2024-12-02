@@ -86,10 +86,10 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
   small_significant <- TRUE
   if(type %in% c("qdir", "st", "unscaled")) {
     small_significant <- FALSE
-    if(alternative != "two.sided") {
-      warning("For qdir, st and unscaled envelopes only the two.sided alternative is valid.")
-      alternative <- "two.sided"
-    }
+  }
+  if(type %in% c("qdir", "st") && alternative != "two.sided") {
+    warning("For qdir and st envelopes only the two.sided alternative is valid.")
+    alternative <- "two.sided"
   }
   check_probs(probs)
   if(!(central %in% c("mean", "median"))) {
@@ -180,6 +180,9 @@ individual_central_region <- function(curve_set, type = "erl", coverage = 0.50,
            }
          },
          unscaled = {
+           if(alternative %in% c("greater", "less")) {
+             T_0 <- rep(0, times=length(T_0))
+           }
            for(ai in seq_along(alpha)) {
              LBounds[[ai]] <- T_0 - Malpha[ai]
              UBounds[[ai]] <- T_0 + Malpha[ai]
@@ -662,7 +665,7 @@ plot.combined_global_envelope <- function(x, labels, scales, sign.col = "red",
 #'
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology) 79, 381-404. doi: 10.1111/rssb.12172
 #'
-#' Myllymäki, M. and Mrkvička, T. (2020). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]. https://doi.org/10.48550/arXiv.1911.06583
+#' Myllymäki, M. and Mrkvička, T. (2024). GET: Global envelopes in R. Journal of Statistical Software 111(3), 1-40. doi: 10.18637/jss.v111.i03
 #'
 #' Ripley, B.D. (1981). Spatial statistics. Wiley, New Jersey.
 #'
@@ -973,7 +976,7 @@ fwer_envelope <- function(curve_sets, type = "erl", alpha = 0.05,
 #' @section Tests based on several functions:
 #' If a list of (suitable) objects are provided in the argument \code{curve_sets},
 #' then by default (\code{nstep = 2}) the two-step combining procedure is used to
-#' perform the combined global test as described in Myllymäki and Mrkvička (2020).
+#' perform the combined global test as described in Myllymäki and Mrkvička (2024).
 #' If \code{nstep = 1} and the lengths of the multivariate vectors in each component
 #' of the list are equal, then the one-step combining procedure is used where the
 #' functions are concatenated together into a one long vector.
@@ -991,7 +994,7 @@ fwer_envelope <- function(curve_sets, type = "erl", alpha = 0.05,
 #'
 #' Myllymäki, M., Mrkvička, T., Grabarnik, P., Seijo, H. and Hahn, U. (2017). Global envelope tests for spatial point patterns. Journal of the Royal Statistical Society: Series B (Statistical Methodology) 79, 381–404. doi: 10.1111/rssb.12172
 #'
-#' Myllymäki, M. and Mrkvička, T. (2023). GET: Global envelopes in R. arXiv:1911.06583 [stat.ME]. https://doi.org/10.48550/arXiv.1911.06583
+#' Myllymäki, M. and Mrkvička, T. (2024). GET: Global envelopes in R. Journal of Statistical Software 111(3), 1-40. doi: 10.18637/jss.v111.i03
 #'
 #' Ripley, B.D. (1981). Spatial statistics. Wiley, New Jersey.
 #'
