@@ -1,6 +1,6 @@
 Package: GET
-Version: 1.0-4
-Date: 2024-11-30
+Version: 1.0-5
+Date: 2025-03-29
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -57,7 +57,7 @@ URL: https://github.com/myllym/GET
 BugReports: https://github.com/myllym/GET/issues
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2024-12-01 08:56:10 UTC; 03080687
+Packaged: 2025-03-29 19:47:19 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Mikko Kuronen [ctb],
@@ -68,4 +68,4 @@ Author: Mari Myllymäki [aut, cre],
   Henri Seijo [ctb]
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2024-12-02 10:20:02 UTC
+Date/Publication: 2025-03-30 14:40:02 UTC
