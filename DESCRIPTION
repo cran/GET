@@ -1,6 +1,6 @@
 Package: GET
-Version: 1.0-5
-Date: 2025-03-29
+Version: 1.0-7
+Date: 2025-05-19
 Title: Global Envelopes
 Encoding: UTF-8
 Authors@R: c(
@@ -25,8 +25,9 @@ Maintainer: Mari Myllymäki <mari.myllymaki@luke.fi>
 Imports: cluster, ggplot2, grDevices, grid, gridExtra, parallel, stats,
         utils, viridisLite
 Suggests: crayon, datasets, geoR, gstat, fda, fda.usc, locfit, mvtnorm,
-        patchwork, quantreg, R.rsp, sp, spatstat.geom,
-        spatstat.explore, spatstat.model, spatstat.linnet, testthat
+        patchwork, quantreg, R.rsp, sf, sp, spatstat.explore,
+        spatstat.geom, spatstat.Knet, spatstat.linnet, spatstat.model,
+        spatstat.random, testthat
 Description: Implementation of global envelopes for a set of general d-dimensional vectors T
     in various applications. A 100(1-alpha)% global envelope is a band bounded by two
     vectors such that the probability that T falls outside this envelope in any of the d
@@ -57,7 +58,7 @@ URL: https://github.com/myllym/GET
 BugReports: https://github.com/myllym/GET/issues
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2025-03-29 19:47:19 UTC; 03080687
+Packaged: 2025-05-19 11:44:36 UTC; 03080687
 Author: Mari Myllymäki [aut, cre],
   Tomáš Mrkvička [aut],
   Mikko Kuronen [ctb],
@@ -68,4 +69,4 @@ Author: Mari Myllymäki [aut, cre],
   Henri Seijo [ctb]
 Depends: R (>= 2.10)
 Repository: CRAN
-Date/Publication: 2025-03-30 14:40:02 UTC
+Date/Publication: 2025-05-19 13:10:01 UTC
